@@ -1,0 +1,16 @@
+{
+    "sharepoint": {
+        "site_url": "https://yourcompany.sharepoint.com/sites/yoursite",
+        "username": "your_username",
+        "password": "your_password",
+        "document_library": "Documents"
+    },
+    "excel": {
+        "file_extension": ".xlsx",
+        "output_file": "compiled_results.xlsx"
+    },
+    "logging": {
+        "log_file": "automation.log",
+        "log_level": "INFO"
+    }
+}

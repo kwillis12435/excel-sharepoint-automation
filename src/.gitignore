@@ -1,0 +1,17 @@
+# Environment variables
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Downloaded and compiled data
+downloaded_studies/
+compiled_results/ 
