@@ -88,6 +88,102 @@ def extract_study_metadata_by_cell(info_file, folder_name):
     wb.close()
     return fields
 
+def extract_relative_expression_data(results_file):
+    """
+    Extract relative expression data from the 'Compiled Indiv. & Grp.' sheet.
+    Returns a dictionary with targets and their corresponding trigger data.
+    """
+    try:
+        wb = load_workbook(results_file, data_only=True, read_only=True)
+        sheet_name = "Compiled Indiv. & Grp."
+        
+        if sheet_name not in wb.sheetnames:
+            print(f"Sheet '{sheet_name}' not found in {results_file}")
+            wb.close()
+            return None
+            
+        ws = wb[sheet_name]
+        
+        # Check if A125 contains "Relative Expression by Groups"
+        if ws["A125"].value != "Relative Expression by Groups":
+            print("Relative Expression by Groups section not found at A125")
+            wb.close()
+            return None
+        
+        # Extract targets starting from F127, then J127, N127, etc. (every 4 columns)
+        targets = []
+        target_columns = []
+        col_start = 6  # Column F (1-indexed: A=1, B=2, ..., F=6)
+        
+        while True:
+            # Convert column number to letter
+            col_letter = chr(ord('A') + col_start - 1)
+            target_cell = f"{col_letter}127"
+            target_value = ws[target_cell].value
+            
+            if target_value is None or (isinstance(target_value, str) and not target_value.strip()):
+                break
+                
+            targets.append(str(target_value).strip())
+            target_columns.append(col_start)
+            col_start += 4  # Move to next target (4 columns apart)
+        
+        if not targets:
+            print("No targets found in row 127")
+            wb.close()
+            return None
+        
+        print(f"Found targets: {targets}")
+        
+        # Extract trigger data starting from row 129
+        triggers_data = {}
+        
+        # First, get all trigger names from column E (assuming triggers are in column E starting from row 129)
+        row = 129
+        triggers = []
+        while True:
+            trigger_cell = ws[f"E{row}"].value
+            if trigger_cell is None or (isinstance(trigger_cell, str) and not trigger_cell.strip()):
+                break
+            triggers.append(str(trigger_cell).strip())
+            row += 1
+        
+        print(f"Found triggers: {triggers}")
+        
+        # For each trigger, extract the data for each target
+        for trigger_idx, trigger in enumerate(triggers):
+            trigger_row = 129 + trigger_idx
+            triggers_data[trigger] = {}
+            
+            for target_idx, target in enumerate(targets):
+                # Calculate column positions for this target
+                base_col = target_columns[target_idx]
+                rel_exp_col = chr(ord('A') + base_col)      # G, K, O, etc.
+                low_col = chr(ord('A') + base_col + 1)      # H, L, P, etc.
+                high_col = chr(ord('A') + base_col + 2)     # I, M, Q, etc.
+                
+                # Extract values
+                rel_exp_val = ws[f"{rel_exp_col}{trigger_row}"].value
+                low_val = ws[f"{low_col}{trigger_row}"].value
+                high_val = ws[f"{high_col}{trigger_row}"].value
+                
+                triggers_data[trigger][target] = {
+                    "rel_exp": rel_exp_val,
+                    "low": low_val,
+                    "high": high_val
+                }
+        
+        wb.close()
+        
+        return {
+            "targets": targets,
+            "relative_expression_data": triggers_data
+        }
+        
+    except Exception as e:
+        print(f"Error extracting relative expression data: {e}")
+        return None
+
 def extract_lar_sheet_fields(df):
     # Try to find relevant fields in the first 20 rows
     fields = {}
@@ -118,10 +214,13 @@ def process_study_folder(study_folder):
 
     print(f"\nProcessing study: {folder_name}")
 
+    study_data = {}
+    
     if os.path.exists(info_file):
         try:
             fields = extract_study_metadata_by_cell(info_file, folder_name)
-            print("Extracted fields:")
+            study_data.update(fields)
+            print("Extracted metadata fields:")
             for k, v in fields.items():
                 print(f"  {k}: {v}")
         except Exception as e:
@@ -135,12 +234,30 @@ def process_study_folder(study_folder):
             xls = pd.ExcelFile(results_file)
             if "LAR Sheet" in xls.sheet_names:
                 df_lar = pd.read_excel(results_file, sheet_name="LAR Sheet", header=None)
-                fields = extract_lar_sheet_fields(df_lar)
-                print("Extracted fields:")
-                for k, v in fields.items():
+                lar_fields = extract_lar_sheet_fields(df_lar)
+                study_data["lar_data"] = lar_fields
+                print("Extracted LAR fields:")
+                for k, v in lar_fields.items():
                     print(f"  {k}: {v}")
         except Exception as e:
-            print(f"Error reading results file: {e}")
+            print(f"Error reading LAR sheet: {e}")
+    
+    # Extract relative expression data
+    if results_file and os.path.exists(results_file):
+        rel_exp_data = extract_relative_expression_data(results_file)
+        if rel_exp_data:
+            study_data["relative_expression"] = rel_exp_data
+            print("Extracted relative expression data:")
+            print(f"  Targets: {rel_exp_data['targets']}")
+            print(f"  Number of triggers: {len(rel_exp_data['relative_expression_data'])}")
+            # Print sample data for first trigger and target
+            if rel_exp_data['relative_expression_data'] and rel_exp_data['targets']:
+                first_trigger = list(rel_exp_data['relative_expression_data'].keys())[0]
+                first_target = rel_exp_data['targets'][0]
+                sample_data = rel_exp_data['relative_expression_data'][first_trigger][first_target]
+                print(f"  Sample data ({first_trigger}, {first_target}): {sample_data}")
+    
+    return study_data
 
 def main():
     # List all study folders in the month folder
@@ -155,19 +272,9 @@ def main():
 
     all_study_data = []
     for study_folder in study_folders:
-        folder_name = os.path.basename(study_folder)
-        info_file = os.path.join(study_folder, f"{folder_name}.xlsm")
-        if os.path.exists(info_file):
-            try:
-                fields = extract_study_metadata_by_cell(info_file, folder_name)
-                all_study_data.append(fields)
-                print("Extracted fields:")
-                for k, v in fields.items():
-                    print(f"  {k}: {v}")
-            except Exception as e:
-                print(f"Error reading info file: {e}")
-        else:
-            print(f"Info file not found for {folder_name}")
+        study_data = process_study_folder(study_folder)
+        if study_data:
+            all_study_data.append(study_data)
 
     # Write to JSON file in the Discovery Biology - 2024 folder
     output_path = os.path.join(
