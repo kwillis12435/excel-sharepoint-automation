@@ -3,6 +3,8 @@ import os
 from openpyxl import load_workbook
 import re
 import json
+import csv
+from datetime import datetime
 
 # Path to the month folder
 MONTH_FOLDER = r"C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024"
@@ -254,17 +256,30 @@ def extract_relative_expression_data(results_file):
                 
                 print(f"  {trigger} + {target}: {rel_exp_letter}{trigger_row}={rel_exp_val}, {low_letter}{trigger_row}={low_val}, {high_letter}{trigger_row}={high_val}")
                 
+                # Skip adding data if all values are null/empty
+                if rel_exp_val is None and low_val is None and high_val is None:
+                    print(f"  Skipping empty data for {trigger} + {target}")
+                    continue
+                
                 triggers_data[trigger][target] = {
                     "rel_exp": rel_exp_val,
                     "low": low_val,
                     "high": high_val
                 }
         
+        # Clean up empty targets
+        clean_triggers_data = {}
+        for trigger, target_data in triggers_data.items():
+            if not target_data:  # Skip triggers with no targets
+                print(f"Skipping empty trigger: {trigger}")
+                continue
+            clean_triggers_data[trigger] = target_data
+        
         wb.close()
         
         return {
             "targets": targets,
-            "relative_expression_data": triggers_data
+            "relative_expression_data": clean_triggers_data
         }
         
     except Exception as e:
@@ -339,14 +354,79 @@ def process_study_folder(study_folder):
             print("Extracted relative expression data:")
             print(f"  Targets: {rel_exp_data['targets']}")
             print(f"  Number of triggers: {len(rel_exp_data['relative_expression_data'])}")
-            # Print sample data for first trigger and target
+            # Print sample data for first trigger and target if available
             if rel_exp_data['relative_expression_data'] and rel_exp_data['targets']:
                 first_trigger = list(rel_exp_data['relative_expression_data'].keys())[0]
-                first_target = rel_exp_data['targets'][0]
-                sample_data = rel_exp_data['relative_expression_data'][first_trigger][first_target]
-                print(f"  Sample data ({first_trigger}, {first_target}): {sample_data}")
+                
+                # Find the first target that exists for this trigger
+                trigger_data = rel_exp_data['relative_expression_data'][first_trigger]
+                available_targets = list(trigger_data.keys())
+                
+                if available_targets:
+                    first_target = available_targets[0]
+                    sample_data = rel_exp_data['relative_expression_data'][first_trigger][first_target]
+                    print(f"  Sample data ({first_trigger}, {first_target}): {sample_data}")
+                else:
+                    print(f"  No target data available for trigger: {first_trigger}")
     
     return study_data
+
+def export_to_csv(all_study_data, output_path):
+    """
+    Export the study data to a CSV file in a flattened format.
+    For each study, creates rows for each trigger x target combination.
+    """
+    # Prepare CSV rows
+    csv_rows = []
+    
+    # Add CSV header row
+    header = [
+        "study_code", "study_name", "screening_model", 
+        "trigger", "trigger_dose", "target", 
+        "relative_expression", "low", "high"
+    ]
+    csv_rows.append(header)
+    
+    # Process each study
+    for study in all_study_data:
+        study_code = study.get("study_code", "")
+        study_name = study.get("study_name", "")
+        screening_model = study.get("screening_model", "")
+        trigger_dose_map = study.get("trigger_dose_map", {})
+        
+        # Skip studies without relative expression data
+        if "relative_expression" not in study:
+            continue
+            
+        rel_exp_data = study["relative_expression"]["relative_expression_data"]
+        
+        # For each trigger in the study
+        for trigger, targets_data in rel_exp_data.items():
+            # Get the dose for this trigger if available
+            trigger_dose = trigger_dose_map.get(trigger, "")
+            
+            # For each target for this trigger
+            for target, values in targets_data.items():
+                # Create a row for this trigger-target combination
+                row = [
+                    study_code,
+                    study_name,
+                    screening_model,
+                    trigger,
+                    trigger_dose,
+                    target,
+                    values.get("rel_exp", ""),
+                    values.get("low", ""),
+                    values.get("high", "")
+                ]
+                csv_rows.append(row)
+    
+    # Write to CSV file
+    with open(output_path, 'w', newline='', encoding='utf-8') as csvfile:
+        csv_writer = csv.writer(csvfile)
+        csv_writer.writerows(csv_rows)
+    
+    print(f"Wrote {len(csv_rows) - 1} rows to CSV file: {output_path}")
 
 def main():
     # List all study folders in the month folder
@@ -365,13 +445,24 @@ def main():
         if study_data:
             all_study_data.append(study_data)
 
-    # Write to JSON file in the Discovery Biology - 2024 folder
-    output_path = os.path.join(
-        os.path.dirname(MONTH_FOLDER), "study_metadata_01-2024.json"
+    # Generate timestamp for output files
+    timestamp = datetime.now().strftime("%Y%m%d")
+    base_output_dir = os.path.dirname(MONTH_FOLDER)
+    month_name = os.path.basename(MONTH_FOLDER).split(' ')[0]  # Extract month number
+    
+    # Write to JSON file
+    json_output_path = os.path.join(
+        base_output_dir, f"study_metadata_{month_name}_{timestamp}.json"
     )
-    with open(output_path, "w", encoding="utf-8") as f:
+    with open(json_output_path, "w", encoding="utf-8") as f:
         json.dump(all_study_data, f, indent=2, ensure_ascii=False)
-    print(f"\nWrote study metadata to {output_path}")
+    print(f"\nWrote study metadata to {json_output_path}")
+    
+    # Write to CSV file
+    csv_output_path = os.path.join(
+        base_output_dir, f"study_data_{month_name}_{timestamp}.csv"
+    )
+    export_to_csv(all_study_data, csv_output_path)
 
 if __name__ == "__main__":
     main()
