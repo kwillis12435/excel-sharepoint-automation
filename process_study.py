@@ -94,7 +94,8 @@ def extract_relative_expression_data(results_file):
     Returns a dictionary with targets and their corresponding trigger data.
     """
     try:
-        wb = load_workbook(results_file, data_only=True, read_only=True)
+        # Load the workbook without read_only mode to use cell references
+        wb = load_workbook(results_file, data_only=True, read_only=False)
         
         # Debug: Print all sheet names
         print(f"Available sheets in {os.path.basename(results_file)}: {wb.sheetnames}")
@@ -128,16 +129,12 @@ def extract_relative_expression_data(results_file):
         print(f"Using sheet: '{sheet_name}'")
         ws = wb[sheet_name]
         
-        # Debug: Check what's in A125 and surrounding cells
-        print(f"Cell A125 value: '{ws['A125'].value}'")
-        print(f"Cell A124 value: '{ws['A124'].value}'")
-        print(f"Cell A126 value: '{ws['A126'].value}'")
-        
         # Look for "Relative Expression by Groups" in nearby cells
         rel_exp_row = None
         for check_row in range(120, 135):
-            cell_value = ws[f"A{check_row}"].value
-            if cell_value and "relative expression" in str(cell_value).lower():
+            cell_value = ws.cell(row=check_row, column=1).value  # Column A
+            print(f"Cell A{check_row} value: '{cell_value}'")
+            if cell_value and isinstance(cell_value, str) and "relative expression" in cell_value.lower():
                 rel_exp_row = check_row
                 print(f"Found 'Relative Expression by Groups' at A{check_row}: '{cell_value}'")
                 break
@@ -154,7 +151,7 @@ def extract_relative_expression_data(results_file):
         # Debug: Check what's in the target row
         for col_num in range(1, 20):  # Check columns A through S
             col_letter = chr(ord('A') + col_num - 1)
-            cell_value = ws[f"{col_letter}{target_row}"].value
+            cell_value = ws.cell(row=target_row, column=col_num).value
             if cell_value:
                 print(f"  {col_letter}{target_row}: '{cell_value}'")
         
@@ -162,24 +159,37 @@ def extract_relative_expression_data(results_file):
         targets = []
         target_columns = []
         col_start = 6  # Column F (1-indexed: A=1, B=2, ..., F=6)
+        zero_count = 0  # Counter for consecutive zeros
         
         while True:
-            # Convert column number to letter
+            # Convert column number to letter for debugging only
             col_letter = chr(ord('A') + col_start - 1)
-            target_cell = f"{col_letter}{target_row}"
-            target_value = ws[target_cell].value
+            target_value = ws.cell(row=target_row, column=col_start).value
             
-            print(f"Checking {target_cell} for target: '{target_value}'")
+            print(f"Checking {col_letter}{target_row} for target: '{target_value}'")
             
-            if target_value is None or (isinstance(target_value, str) and not target_value.strip()):
-                break
-                
-            targets.append(str(target_value).strip())
-            target_columns.append(col_start)
+            # Check if value is zero or empty
+            is_zero_or_empty = (target_value is None or 
+                               (isinstance(target_value, str) and not target_value.strip()) or
+                               target_value == 0 or 
+                               str(target_value).strip() == "0")
+            
+            if is_zero_or_empty:
+                zero_count += 1
+                # Stop if we encounter 5 consecutive zeros
+                if zero_count >= 5:
+                    print(f"Found {zero_count} consecutive zeros/empty cells - stopping target search")
+                    break
+            else:
+                # Reset zero counter if we find a non-zero value
+                zero_count = 0
+                targets.append(str(target_value).strip())
+                target_columns.append(col_start)
+            
             col_start += 4  # Move to next target (4 columns apart)
             
             # Safety break to avoid infinite loop
-            if len(targets) > 10:
+            if len(targets) > 20:  # Increased limit for safety
                 break
         
         if not targets:
@@ -190,24 +200,24 @@ def extract_relative_expression_data(results_file):
         print(f"Found targets: {targets}")
         print(f"Target columns: {target_columns}")
         
-        # Extract trigger data starting from row target_row + 2 (129 if target_row is 127)
-        trigger_start_row = target_row + 2
+        # Extract trigger data starting from row target_row + 3 (130 if target_row is 127)
+        trigger_start_row = target_row + 3  # Start at row 130
         print(f"Looking for triggers starting at row {trigger_start_row}")
         
-        # Debug: Check what's in column E around the trigger start row
+        # Debug: Check what's in column B around the trigger start row
         for check_row in range(trigger_start_row - 2, trigger_start_row + 10):
-            trigger_value = ws[f"E{check_row}"].value
+            trigger_value = ws.cell(row=check_row, column=2).value  # Column B = 2
             if trigger_value:
-                print(f"  E{check_row}: '{trigger_value}'")
+                print(f"  B{check_row}: '{trigger_value}'")
         
         # Extract trigger data
         triggers_data = {}
         
-        # Get all trigger names from column E
+        # Get all trigger names from column B starting at row 130
         row = trigger_start_row
         triggers = []
         while True:
-            trigger_cell = ws[f"E{row}"].value
+            trigger_cell = ws.cell(row=row, column=2).value  # Column B = 2
             if trigger_cell is None or (isinstance(trigger_cell, str) and not trigger_cell.strip()):
                 break
             triggers.append(str(trigger_cell).strip())
@@ -227,16 +237,22 @@ def extract_relative_expression_data(results_file):
             for target_idx, target in enumerate(targets):
                 # Calculate column positions for this target
                 base_col = target_columns[target_idx]
-                rel_exp_col = chr(ord('A') + base_col)      # G, K, O, etc.
-                low_col = chr(ord('A') + base_col + 1)      # H, L, P, etc.
-                high_col = chr(ord('A') + base_col + 2)     # I, M, Q, etc.
+                # For target in column F (6), the data is in G, H, I (7, 8, 9)
+                rel_exp_col = base_col + 1    # G, K, O, etc.
+                low_col = base_col + 2        # H, L, P, etc.
+                high_col = base_col + 3       # I, M, Q, etc.
                 
-                # Extract values
-                rel_exp_val = ws[f"{rel_exp_col}{trigger_row}"].value
-                low_val = ws[f"{low_col}{trigger_row}"].value
-                high_val = ws[f"{high_col}{trigger_row}"].value
+                # For debugging, convert to letter notation
+                rel_exp_letter = chr(ord('A') + rel_exp_col - 1)
+                low_letter = chr(ord('A') + low_col - 1)
+                high_letter = chr(ord('A') + high_col - 1)
                 
-                print(f"  {trigger} + {target}: {rel_exp_col}{trigger_row}={rel_exp_val}, {low_col}{trigger_row}={low_val}, {high_col}{trigger_row}={high_val}")
+                # Extract values using cell() method
+                rel_exp_val = ws.cell(row=trigger_row, column=rel_exp_col).value
+                low_val = ws.cell(row=trigger_row, column=low_col).value
+                high_val = ws.cell(row=trigger_row, column=high_col).value
+                
+                print(f"  {trigger} + {target}: {rel_exp_letter}{trigger_row}={rel_exp_val}, {low_letter}{trigger_row}={low_val}, {high_letter}{trigger_row}={high_val}")
                 
                 triggers_data[trigger][target] = {
                     "rel_exp": rel_exp_val,
@@ -358,4 +374,4 @@ def main():
     print(f"\nWrote study metadata to {output_path}")
 
 if __name__ == "__main__":
-    main() 
+    main()
