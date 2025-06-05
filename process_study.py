@@ -95,20 +95,68 @@ def extract_relative_expression_data(results_file):
     """
     try:
         wb = load_workbook(results_file, data_only=True, read_only=True)
-        sheet_name = "Compiled Indiv. & Grp."
         
-        if sheet_name not in wb.sheetnames:
-            print(f"Sheet '{sheet_name}' not found in {results_file}")
+        # Debug: Print all sheet names
+        print(f"Available sheets in {os.path.basename(results_file)}: {wb.sheetnames}")
+        
+        # Try to find the correct sheet name (case insensitive)
+        sheet_name = None
+        target_sheet_names = [
+            "Compiled Indiv. & Grp.",
+            "Compiled Indiv. & Grp",
+            "Compiled Indiv & Grp.",
+            "Compiled Indiv & Grp"
+        ]
+        
+        for target_name in target_sheet_names:
+            if target_name in wb.sheetnames:
+                sheet_name = target_name
+                break
+        
+        # If exact match not found, try case-insensitive search
+        if not sheet_name:
+            for sheet in wb.sheetnames:
+                if "compiled" in sheet.lower() and ("indiv" in sheet.lower() or "grp" in sheet.lower()):
+                    sheet_name = sheet
+                    break
+        
+        if not sheet_name:
+            print(f"No 'Compiled Indiv. & Grp.' sheet found in {results_file}")
             wb.close()
             return None
             
+        print(f"Using sheet: '{sheet_name}'")
         ws = wb[sheet_name]
         
-        # Check if A125 contains "Relative Expression by Groups"
-        if ws["A125"].value != "Relative Expression by Groups":
-            print("Relative Expression by Groups section not found at A125")
+        # Debug: Check what's in A125 and surrounding cells
+        print(f"Cell A125 value: '{ws['A125'].value}'")
+        print(f"Cell A124 value: '{ws['A124'].value}'")
+        print(f"Cell A126 value: '{ws['A126'].value}'")
+        
+        # Look for "Relative Expression by Groups" in nearby cells
+        rel_exp_row = None
+        for check_row in range(120, 135):
+            cell_value = ws[f"A{check_row}"].value
+            if cell_value and "relative expression" in str(cell_value).lower():
+                rel_exp_row = check_row
+                print(f"Found 'Relative Expression by Groups' at A{check_row}: '{cell_value}'")
+                break
+        
+        if not rel_exp_row:
+            print("Relative Expression by Groups section not found between rows 120-135")
             wb.close()
             return None
+        
+        # Extract targets starting from row rel_exp_row + 2 (so if found at 125, look at 127)
+        target_row = rel_exp_row + 2
+        print(f"Looking for targets in row {target_row}")
+        
+        # Debug: Check what's in the target row
+        for col_num in range(1, 20):  # Check columns A through S
+            col_letter = chr(ord('A') + col_num - 1)
+            cell_value = ws[f"{col_letter}{target_row}"].value
+            if cell_value:
+                print(f"  {col_letter}{target_row}: '{cell_value}'")
         
         # Extract targets starting from F127, then J127, N127, etc. (every 4 columns)
         targets = []
@@ -118,8 +166,10 @@ def extract_relative_expression_data(results_file):
         while True:
             # Convert column number to letter
             col_letter = chr(ord('A') + col_start - 1)
-            target_cell = f"{col_letter}127"
+            target_cell = f"{col_letter}{target_row}"
             target_value = ws[target_cell].value
+            
+            print(f"Checking {target_cell} for target: '{target_value}'")
             
             if target_value is None or (isinstance(target_value, str) and not target_value.strip()):
                 break
@@ -127,19 +177,34 @@ def extract_relative_expression_data(results_file):
             targets.append(str(target_value).strip())
             target_columns.append(col_start)
             col_start += 4  # Move to next target (4 columns apart)
+            
+            # Safety break to avoid infinite loop
+            if len(targets) > 10:
+                break
         
         if not targets:
-            print("No targets found in row 127")
+            print(f"No targets found in row {target_row}")
             wb.close()
             return None
         
         print(f"Found targets: {targets}")
+        print(f"Target columns: {target_columns}")
         
-        # Extract trigger data starting from row 129
+        # Extract trigger data starting from row target_row + 2 (129 if target_row is 127)
+        trigger_start_row = target_row + 2
+        print(f"Looking for triggers starting at row {trigger_start_row}")
+        
+        # Debug: Check what's in column E around the trigger start row
+        for check_row in range(trigger_start_row - 2, trigger_start_row + 10):
+            trigger_value = ws[f"E{check_row}"].value
+            if trigger_value:
+                print(f"  E{check_row}: '{trigger_value}'")
+        
+        # Extract trigger data
         triggers_data = {}
         
-        # First, get all trigger names from column E (assuming triggers are in column E starting from row 129)
-        row = 129
+        # Get all trigger names from column E
+        row = trigger_start_row
         triggers = []
         while True:
             trigger_cell = ws[f"E{row}"].value
@@ -147,12 +212,16 @@ def extract_relative_expression_data(results_file):
                 break
             triggers.append(str(trigger_cell).strip())
             row += 1
+            
+            # Safety break to avoid infinite loop
+            if len(triggers) > 20:
+                break
         
         print(f"Found triggers: {triggers}")
         
         # For each trigger, extract the data for each target
         for trigger_idx, trigger in enumerate(triggers):
-            trigger_row = 129 + trigger_idx
+            trigger_row = trigger_start_row + trigger_idx
             triggers_data[trigger] = {}
             
             for target_idx, target in enumerate(targets):
@@ -166,6 +235,8 @@ def extract_relative_expression_data(results_file):
                 rel_exp_val = ws[f"{rel_exp_col}{trigger_row}"].value
                 low_val = ws[f"{low_col}{trigger_row}"].value
                 high_val = ws[f"{high_col}{trigger_row}"].value
+                
+                print(f"  {trigger} + {target}: {rel_exp_col}{trigger_row}={rel_exp_val}, {low_col}{trigger_row}={low_val}, {high_col}{trigger_row}={high_val}")
                 
                 triggers_data[trigger][target] = {
                     "rel_exp": rel_exp_val,
@@ -182,6 +253,8 @@ def extract_relative_expression_data(results_file):
         
     except Exception as e:
         print(f"Error extracting relative expression data: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def extract_lar_sheet_fields(df):
@@ -215,7 +288,7 @@ def process_study_folder(study_folder):
     print(f"\nProcessing study: {folder_name}")
 
     study_data = {}
-    
+
     if os.path.exists(info_file):
         try:
             fields = extract_study_metadata_by_cell(info_file, folder_name)
