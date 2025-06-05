@@ -375,15 +375,14 @@ def export_to_csv(all_study_data, output_path):
     """
     Export the study data to a CSV file in a flattened format.
     For each study, creates rows for each trigger x target combination.
+    Columns are matched to the manual Excel sheet for comparison.
     """
     # Prepare CSV rows
     csv_rows = []
     
-    # Add CSV header row
+    # Add CSV header row to match manual Excel
     header = [
-        "study_code", "study_name", "screening_model", 
-        "trigger", "trigger_dose", "target", 
-        "relative_expression", "low", "high"
+        "study_name", "study_code", "screening_model", "gene_target", "trigger", "dose", "timepoint", "tissue", "avg_rel_exp", "avg_rel_exp_lsd", "avg_rel_exp_hsd"
     ]
     csv_rows.append(header)
     
@@ -403,21 +402,22 @@ def export_to_csv(all_study_data, output_path):
         # For each trigger in the study
         for trigger, targets_data in rel_exp_data.items():
             # Get the dose for this trigger if available
-            trigger_dose = trigger_dose_map.get(trigger, "")
-            
+            dose = trigger_dose_map.get(trigger, "")
             # For each target for this trigger
             for target, values in targets_data.items():
                 # Create a row for this trigger-target combination
                 row = [
-                    study_code,
-                    study_name,
-                    screening_model,
-                    trigger,
-                    trigger_dose,
-                    target,
-                    values.get("rel_exp", ""),
-                    values.get("low", ""),
-                    values.get("high", "")
+                    study_name,  # study_name
+                    study_code,  # study_code
+                    screening_model,  # screening_model
+                    target,  # gene_target
+                    trigger,  # trigger
+                    dose,  # dose
+                    "",  # timepoint (not available in automation)
+                    "",  # tissue (not available in automation)
+                    values.get("rel_exp", ""),  # avg_rel_exp
+                    values.get("low", ""),      # avg_rel_exp_lsd
+                    values.get("high", "")      # avg_rel_exp_hsd
                 ]
                 csv_rows.append(row)
     
