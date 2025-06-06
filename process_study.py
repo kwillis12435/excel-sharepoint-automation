@@ -212,7 +212,7 @@ class ExcelExtractor:
     """
     
     @staticmethod
-    def extract_column_values(ws, start_row: int, column: str, stop_on_empty: bool = True) -> List[str]:
+    def extract_column_values(ws, start_row: int, column: str, stop_on_empty: bool = True, max_empty_cells: int = 1) -> List[str]:
         """
         Extract all values from a single column starting at a specific row.
         
@@ -220,20 +220,30 @@ class ExcelExtractor:
             ws: Excel worksheet object
             start_row: Row number to start extraction (1-indexed)
             column: Column letter (e.g., 'B', 'S')
-            stop_on_empty: Whether to stop when hitting an empty cell
+            stop_on_empty: Whether to stop when hitting empty cells
+            max_empty_cells: Number of consecutive empty cells to tolerate before stopping
             
         Returns:
             List of extracted string values
         """
         values = []
         row = start_row
+        empty_count = 0
+        
         while row <= ws.max_row:
             cell_value = ws[f"{column}{row}"].value
-            if stop_on_empty and is_empty_or_zero(cell_value):
-                break
-            if not is_empty_or_zero(cell_value):
+            
+            if is_empty_or_zero(cell_value):
+                empty_count += 1
+                if stop_on_empty and empty_count >= max_empty_cells:
+                    break
+            else:
+                # Reset empty counter when we find a value
+                empty_count = 0
                 values.append(str(cell_value).strip())
+                
             row += 1
+            
         return values
 
     @staticmethod
@@ -456,55 +466,152 @@ def _create_trigger_dose_map(triggers: List[str], doses: List[Any]) -> Dict[str,
 
 def _extract_timepoint(ws) -> Optional[str]:
     """
-    Extract timepoint by searching column A for Day/timepoint keywords.
-    Finds the keyword cell, then moves down to find the last non-empty cell in that area.
+    Extract the timepoint value using a systematic approach:
+    1. First check known locations for specific study types
+    2. Scan column A for timepoint headers or patterns
+    3. When a timepoint header is found, search downward to find the LAST value
+    4. The last value in a timepoint sequence is the actual timepoint we want
     """
-    debug_print("\nExtracting timepoint from column A...")
+    print("\nExtracting timepoint from worksheet...")
     
-    # Keywords to search for in column A
-    timepoint_keywords = ['day %', 'timepoint', 'days', 'day', 'time point', 'tp']
+    # STRATEGY 1: Check specific known locations for certain study types
+    known_locations = [
+        (24, 1),   # A24 (common location)
+        (16, 4),   # D16 for rIL33_8_Alternaria
+        (23, 4),   # D23 for rHDM_Pilot_2
+        (55, 1),   # A55 for D154
+        (145, 4),  # D145 for mTSHR_7
+        (154, 1),   # A154 possibly containing timepoint
+        (24, 4)    # D24 possibly containing timepoint
+    ]
     
-    # Search column A for timepoint keywords
-    keyword_found_row = None
-    for row in range(1, min(ws.max_row + 1, 100)):  # Search first 100 rows
-        cell_value = ws.cell(row=row, column=1).value  # Column A
-        if cell_value:
-            cell_text = str(cell_value).lower().strip()
-            for keyword in timepoint_keywords:
-                if keyword in cell_text:
-                    keyword_found_row = row
-                    debug_print(f"Found timepoint keyword '{keyword}' in A{row}: {cell_value}")
-                    break
-            if keyword_found_row:
-                break
+    for row, col in known_locations:
+        try:
+            cell_value = ws.cell(row=row, column=col).value
+            if cell_value:
+                cell_text = str(cell_value).lower()
+                match = re.search(r'd(\d+)', cell_text)
+                if match and match.group(1):
+                    print(f"Found direct timepoint in cell ({row},{col}): D{match.group(1)}")
+                    # Continue checking other cells to find the LAST value
+                    continue
+        except:
+            continue
     
-    if not keyword_found_row:
-        debug_print("No timepoint keyword found in column A")
-        return None
+    # STRATEGY 2: Find any timepoint header in column A
+    timepoint_headers = []
+    for row in range(1, min(ws.max_row + 1, 100)):
+        try:
+            cell_value = ws.cell(row=row, column=1).value
+            if not cell_value:
+                continue
+                
+            cell_text = str(cell_value).lower()
+            # Check for common timepoint header patterns
+            if any(keyword in cell_text for keyword in ['day', 'timepoint', 'sacrifice', 'necropsy']):
+                print(f"Found timepoint header in A{row}: {cell_value}")
+                timepoint_headers.append(row)
+        except:
+            continue
     
-    # Starting from the keyword row, move down column A to find the last non-empty cell
-    last_timepoint_value = None
-    last_timepoint_row = None
+    # STRATEGY 3: For each header, find the LAST value in that section
+    timepoint_values = []
     
-    for row in range(keyword_found_row, min(ws.max_row + 1, keyword_found_row + 50)):  # Check next 50 rows
-        cell_value = ws.cell(row=row, column=1).value  # Column A
-        if cell_value and str(cell_value).strip():
-            cell_text = str(cell_value).strip()
-            # Skip the header row itself
-            if row != keyword_found_row:
-                last_timepoint_value = cell_text
-                last_timepoint_row = row
-                debug_print(f"Found timepoint value in A{row}: {cell_text}")
-        else:
-            # Hit an empty cell, stop searching
-            if last_timepoint_value:
-                break
+    for header_row in timepoint_headers:
+        last_value = None
+        last_row = None
+        empty_count = 0
+        
+        # Search up to 30 rows below the header
+        for row in range(header_row + 1, min(header_row + 30, ws.max_row + 1)):
+            try:
+                cell_value = ws.cell(row=row, column=1).value
+                
+                if is_empty_or_zero(cell_value):
+                    empty_count += 1
+                    if empty_count >= 3:  # Stop after 3 consecutive empty cells
+                        break
+                else:
+                    empty_count = 0
+                    cell_text = str(cell_value).strip().lower()
+                    
+                    # Skip rows that look like headers
+                    if any(keyword in cell_text for keyword in ['day', 'timepoint', 'date']):
+                        continue
+                        
+                    # Look for day patterns (D16, D23, etc.)
+                    d_match = re.search(r'd(\d+)', cell_text)
+                    num_match = re.search(r'^(\d+)$', cell_text)
+                    
+                    if d_match:
+                        last_value = f"D{d_match.group(1)}"
+                        last_row = row
+                        print(f"Found timepoint in A{row}: {last_value}")
+                    elif num_match and not any(skip in cell_text for skip in ['/', '-']):  # Avoid dates
+                        last_value = f"D{num_match.group(1)}"
+                        last_row = row
+                        print(f"Found numeric timepoint in A{row}: {last_value}")
+            except:
+                continue
+        
+        if last_value:
+            print(f"Final timepoint in section A{last_row}: {last_value}")
+            timepoint_values.append((last_row, last_value))
     
-    if last_timepoint_value:
-        debug_print(f"Final timepoint value from A{last_timepoint_row}: {last_timepoint_value}")
-        return format_timepoint(last_timepoint_value)
+    # If we found multiple timepoint values, use the one with highest row number
+    # This ensures we get the LAST value in the sheet
+    if timepoint_values:
+        timepoint_values.sort(key=lambda x: x[0], reverse=True)
+        print(f"Selected final timepoint: {timepoint_values[0][1]} (from row A{timepoint_values[0][0]})")
+        return timepoint_values[0][1]
     
-    debug_print("No timepoint value found after keyword")
+    # STRATEGY 4: Brute force scan for any D## pattern
+    # This is our last resort if the other strategies fail
+    d_pattern_rows = []
+    
+    for row in range(1, min(ws.max_row + 1, 200)):
+        try:
+            cell_value = ws.cell(row=row, column=1).value
+            if cell_value:
+                cell_text = str(cell_value).lower()
+                match = re.search(r'd(\d+)', cell_text)
+                if match:
+                    day_num = int(match.group(1))
+                    if 1 <= day_num <= 365:  # Valid day range
+                        d_pattern_rows.append((row, f"D{day_num}"))
+                        print(f"Found D-pattern in A{row}: D{day_num}")
+        except:
+            continue
+    
+    # Get the last D-pattern in the sheet
+    if d_pattern_rows:
+        d_pattern_rows.sort(key=lambda x: x[0], reverse=True)
+        print(f"Selected D-pattern: {d_pattern_rows[0][1]} (from row A{d_pattern_rows[0][0]})")
+        return d_pattern_rows[0][1]
+    
+    # STRATEGY 5: Special case for rIL33_8_Alternaria and similar
+    # Known to have timepoint info in specific cells
+    special_case_cells = [
+        (16, 4), (17, 4), (18, 4),  # D column near row 16
+        (23, 4), (24, 4), (25, 4),  # D column near row 23
+        (145, 1), (146, 1), (147, 1)  # A column near row 145
+    ]
+    
+    for row, col in special_case_cells:
+        try:
+            cell_value = ws.cell(row=row, column=col).value
+            if cell_value:
+                cell_text = str(cell_value).lower()
+                # Very specific pattern matching for these cells
+                match = re.search(r'd\s*(\d+)', cell_text)
+                if match:
+                    timepoint = f"D{match.group(1)}"
+                    print(f"Found special case timepoint in ({row},{col}): {timepoint}")
+                    return timepoint
+        except:
+            continue
+    
+    print("No valid timepoint found after exhaustive search")
     return None
 
 # ========================== RELATIVE EXPRESSION DATA EXTRACTION ==========================
@@ -711,7 +818,6 @@ def process_study_folder(study_folder: str) -> Optional[Dict[str, Any]]:
     results_folder = os.path.join(study_folder, "Results")
 
     print(f"\nProcessing study: {folder_name}")
-
     study_data = {}
 
     # Extract metadata from the main study file
@@ -732,18 +838,32 @@ def process_study_folder(study_folder: str) -> Optional[Dict[str, Any]]:
         lar_data = _extract_lar_data(results_file)
         if lar_data:
             study_data["lar_data"] = lar_data
+            print(f"Extracted LAR data: {lar_data}")
         
-        # Extract the main relative expression data, passing tissues for comparison
+        # Extract the main relative expression data
         procedure_tissues = study_data.get("tissues", [])
         rel_exp_data = safe_workbook_operation(
-            results_file, extract_relative_expression_data, procedure_tissues, read_only=False
+            results_file, 
+            extract_relative_expression_data,
+            procedure_tissues
         )
+        
         if rel_exp_data:
             study_data["relative_expression"] = rel_exp_data
-            print(f"Extracted relative expression data: {len(rel_exp_data['targets'])} targets, "
-                  f"{len(rel_exp_data['relative_expression_data'])} triggers")
-            if rel_exp_data.get("found_tissues"):
-                print(f"Found additional tissues: {rel_exp_data['found_tissues']}")
+            print(f"Extracted relative expression data:")
+            print(f"  - Targets: {len(rel_exp_data.get('targets', []))} targets")
+            print(f"  - Triggers: {len(rel_exp_data.get('relative_expression_data', {}))} triggers")
+            # Print a sample of the data structure
+            if rel_exp_data.get('relative_expression_data'):
+                first_trigger = next(iter(rel_exp_data['relative_expression_data']))
+                print(f"  - Sample data structure for trigger '{first_trigger}':")
+                if rel_exp_data['relative_expression_data'][first_trigger]:
+                    first_target = next(iter(rel_exp_data['relative_expression_data'][first_trigger]))
+                    print(f"    {first_target}: {rel_exp_data['relative_expression_data'][first_trigger][first_target]}")
+                else:
+                    print("    No target data found")
+        else:
+            print("  No relative expression data found")
     
     return study_data if study_data else None
 
@@ -823,32 +943,64 @@ def export_to_csv(all_study_data: List[Dict[str, Any]], output_path: str):
 def _process_study_for_csv(study: Dict[str, Any], csv_rows: List[List[str]]) -> int:
     """
     Process a single study for CSV export.
-    Matches triggers from metadata with triggers from results data,
-    then creates one CSV row per trigger-target combination.
+    Handles both older data format and new optimized format.
+    
+    Args:
+        study: Study data dictionary
+        csv_rows: List of CSV rows to append to
+        
+    Returns:
+        Number of rows added to the CSV
     """
+    # Skip studies with no relative expression data
     if "relative_expression" not in study:
+        print(f"Skipping study with no relative expression data: {study.get('study_name')}")
         return 0
     
+    print(f"\nProcessing CSV data for study: {study.get('study_name')}")
     study_info = _extract_study_info_for_csv(study)
-    rel_exp_data = study["relative_expression"]["relative_expression_data"]
+    print(f"  Study info: {study_info}")
+    
+    rel_exp_data = study["relative_expression"].get("relative_expression_data", {})
+    
+    if not rel_exp_data:
+        print(f"  No relative expression data found in study")
+        return 0
+    
+    print(f"  Found {len(rel_exp_data)} triggers in relative expression data")
+    print(f"  Trigger names in relative expression: {list(rel_exp_data.keys())}")
+    print(f"  Trigger names in metadata: {list(study_info['trigger_dose_map'].keys())}")
     
     rows_added = 0
-    # Process each trigger from the metadata
-    for trigger, trigger_info in study_info["trigger_dose_map"].items():
-        matching_trigger = StringMatcher.find_best_match(trigger, list(rel_exp_data.keys()))
+    
+    # Process each trigger from results data, not just from metadata
+    for trigger in rel_exp_data.keys():
+        # Get trigger info from metadata if available, otherwise create empty info
+        trigger_info = study_info["trigger_dose_map"].get(trigger, {"dose": "", "dose_type": ""})
+        trigger_data = rel_exp_data[trigger]
         
-        if not matching_trigger:
-            continue
+        print(f"  Processing trigger: {trigger} with {len(trigger_data)} targets")
         
-        trigger_data = rel_exp_data[matching_trigger]
-        for target, values in trigger_data.items():
-            if all(not values.get(key) for key in ['rel_exp', 'low', 'high']):
-                continue
+        # Process each target for this trigger
+        for target, value in trigger_data.items():
+            # Check if value is a dictionary (old format) or float (new format)
+            if isinstance(value, dict):
+                # Old format: {"rel_exp": val, "low": val, "high": val}
+                row = _create_csv_row(
+                    study_info, trigger, trigger_info, target, 
+                    {"rel_exp": value.get("rel_exp"), "low": value.get("low"), "high": value.get("high")}
+                )
+            else:
+                # New format: direct float value
+                row = _create_csv_row(
+                    study_info, trigger, trigger_info, target, 
+                    {"rel_exp": value, "low": None, "high": None}
+                )
             
-            row = _create_csv_row(study_info, trigger, trigger_info, target, values)
             csv_rows.append(row)
             rows_added += 1
     
+    print(f"  Added {rows_added} rows to CSV for study {study.get('study_name')}")
     return rows_added
 
 def _extract_study_info_for_csv(study: Dict[str, Any]) -> Dict[str, Any]:
@@ -883,20 +1035,46 @@ def _create_csv_row(study_info: Dict[str, Any], trigger: str, trigger_info: Dict
                    target: str, values: Dict[str, Any]) -> List[str]:
     """
     Create a single CSV row for one trigger-target combination.
+    
+    CSV columns (in order):
+    1. study_name: Name of the study
+    2. study_code: 10-digit code (quoted to prevent Excel issues)
+    3. screening_model: Type of screening used
+    4. gene_target: Name of the target gene
+    5. trigger: Name of the trigger (e.g., siRNA sequence)
+    6. dose: Dose amount for this trigger
+    7. dose_type: Detected dose type (SQ, IV, IM, Intratracheal)
+    8. timepoint: Time point of measurement (e.g., D14)
+    9. tissue: Tissue type tested
+    10. avg_rel_exp: Average relative expression value
+    11. avg_rel_exp_lsd: Lower standard deviation
+    12. avg_rel_exp_hsd: Higher standard deviation
+    
+    All numeric values are formatted to 4 decimal places.
     """
+    # Handle the case where values is directly a float (new format)
+    if not isinstance(values, dict):
+        rel_exp = values
+        low = None
+        high = None
+    else:
+        rel_exp = values.get("rel_exp")
+        low = values.get("low")
+        high = values.get("high")
+        
     return [
         study_info["study_name"],
         study_info["study_code"],
         study_info["screening_model"],
-        target,
-        trigger,
-        trigger_info.get("dose", ""),
-        trigger_info.get("dose_type", ""),
+        target,                                # gene_target
+        trigger,                               # trigger (from metadata)
+        str(trigger_info.get("dose", "")),     # dose (from metadata)
+        str(trigger_info.get("dose_type", "")), # dose_type (detected)
         study_info["timepoint"],
         study_info["tissue"],
-        convert_to_numeric(values.get("rel_exp")),
-        convert_to_numeric(values.get("low")),
-        convert_to_numeric(values.get("high"))
+        convert_to_numeric(rel_exp),           # avg_rel_exp 
+        convert_to_numeric(low),               # avg_rel_exp_lsd
+        convert_to_numeric(high)               # avg_rel_exp_hsd
     ]
 
 def _print_export_summary(stats: Dict[str, int], output_path: str):
