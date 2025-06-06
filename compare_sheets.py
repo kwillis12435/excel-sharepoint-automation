@@ -18,7 +18,7 @@ def compare_sheets(auto_csv_path, manual_excel_path, output_path=None, key_colum
 
     # Default columns if not provided
     if key_columns is None:
-        key_columns = ['study_code', 'trigger', 'gene_target']
+        key_columns = ['study_name', 'trigger', 'gene_target', 'timepoint']  # Compare based on study_name and timepoint
     if value_columns is None:
         value_columns = ['avg_rel_exp', 'avg_rel_exp_lsd', 'avg_rel_exp_hsd']
 
@@ -70,7 +70,7 @@ def compare_sheets(auto_csv_path, manual_excel_path, output_path=None, key_colum
 
 if __name__ == "__main__":
     # Example usage - update these paths as needed
-    auto_csv = r"C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\study_data_01_20250605.csv"  # Path to your automated CSV
+    auto_csv = r"C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\study_data_01_20250605_test.csv"  # Path to your automated CSV
     manual_excel = r"C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\LO_study_data (1).xlsx"      # Path to your manual Excel file
     output_csv = r"C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\output.csv"
     compare_sheets(auto_csv, manual_excel, output_csv)
