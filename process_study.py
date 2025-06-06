@@ -17,7 +17,6 @@ class Config:
     # Main folder containing all study subfolders to process
     MONTH_FOLDER = r"C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024"
     DEBUG = False  # Set to True to see detailed debug output during processing
-    MAX_STUDIES = 10  # LIMIT TO 10 STUDIES FOR TESTING
     
     # Excel sheet names we're looking for in the workbooks
     PROCEDURE_SHEET = "Procedure Request Form"  # Contains study metadata
@@ -943,65 +942,62 @@ def export_to_csv(all_study_data: List[Dict[str, Any]], output_path: str):
 def _process_study_for_csv(study: Dict[str, Any], csv_rows: List[List[str]]) -> int:
     """
     Process a single study for CSV export.
-    Handles both older data format and new optimized format.
-    
-    Args:
-        study: Study data dictionary
-        csv_rows: List of CSV rows to append to
-        
-    Returns:
-        Number of rows added to the CSV
+    Groups all rows for a study by tissue (primary) and then by target (secondary).
+    If tissue is missing, groups by target.
     """
-    # Skip studies with no relative expression data
     if "relative_expression" not in study:
         print(f"Skipping study with no relative expression data: {study.get('study_name')}")
         return 0
-    
+
     print(f"\nProcessing CSV data for study: {study.get('study_name')}")
     study_info = _extract_study_info_for_csv(study)
     print(f"  Study info: {study_info}")
-    
+
     rel_exp_data = study["relative_expression"].get("relative_expression_data", {})
-    
     if not rel_exp_data:
         print(f"  No relative expression data found in study")
         return 0
-    
+
     print(f"  Found {len(rel_exp_data)} triggers in relative expression data")
     print(f"  Trigger names in relative expression: {list(rel_exp_data.keys())}")
     print(f"  Trigger names in metadata: {list(study_info['trigger_dose_map'].keys())}")
-    
-    rows_added = 0
-    
-    # Process each trigger from results data, not just from metadata
+
+    # Collect all rows for this study
+    study_rows = []
     for trigger in rel_exp_data.keys():
-        # Get trigger info from metadata if available, otherwise create empty info
         trigger_info = study_info["trigger_dose_map"].get(trigger, {"dose": "", "dose_type": ""})
         trigger_data = rel_exp_data[trigger]
-        
-        print(f"  Processing trigger: {trigger} with {len(trigger_data)} targets")
-        
-        # Process each target for this trigger
         for target, value in trigger_data.items():
-            # Check if value is a dictionary (old format) or float (new format)
             if isinstance(value, dict):
-                # Old format: {"rel_exp": val, "low": val, "high": val}
                 row = _create_csv_row(
-                    study_info, trigger, trigger_info, target, 
+                    study_info, trigger, trigger_info, target,
                     {"rel_exp": value.get("rel_exp"), "low": value.get("low"), "high": value.get("high")}
                 )
             else:
-                # New format: direct float value
                 row = _create_csv_row(
-                    study_info, trigger, trigger_info, target, 
+                    study_info, trigger, trigger_info, target,
                     {"rel_exp": value, "low": None, "high": None}
                 )
-            
-            csv_rows.append(row)
-            rows_added += 1
-    
-    print(f"  Added {rows_added} rows to CSV for study {study.get('study_name')}")
-    return rows_added
+            study_rows.append(row)
+
+    # Determine index for tissue and target columns in the row
+    tissue_idx = 8  # 0-based index for 'tissue' in the row
+    target_idx = 3  # 0-based index for 'gene_target' in the row
+
+    # Sort rows: by tissue (if present), then by target
+    def sort_key(row):
+        tissue = row[tissue_idx] or "ZZZ"  # Put missing tissues at the end
+        target = row[target_idx] or "ZZZ"
+        return (tissue, target)
+
+    study_rows.sort(key=sort_key)
+
+    # Append sorted rows to the main CSV
+    for row in study_rows:
+        csv_rows.append(row)
+
+    print(f"  Added {len(study_rows)} rows to CSV for study {study.get('study_name')}")
+    return len(study_rows)
 
 def _extract_study_info_for_csv(study: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -1100,10 +1096,10 @@ def main():
         print("No studies found in the month folder.")
         return
 
-    print(f"Processing {min(len(study_folders), Config.MAX_STUDIES)} study folders")
+    print(f"Processing {len(study_folders)} study folders")
     
     all_study_data = []
-    for study_folder in study_folders[:Config.MAX_STUDIES]:
+    for study_folder in study_folders:
         study_data = process_study_folder(study_folder)
         if study_data:
             all_study_data.append(study_data)
