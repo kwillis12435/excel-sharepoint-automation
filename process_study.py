@@ -17,6 +17,7 @@ class Config:
     # Main folder containing all study subfolders to process
     MONTH_FOLDER = r"C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024"
     DEBUG = False  # Set to True to see detailed debug output during processing
+    MAX_STUDIES = 10  # LIMIT TO 10 STUDIES FOR TESTING
     
     # Excel sheet names we're looking for in the workbooks
     PROCEDURE_SHEET = "Procedure Request Form"  # Contains study metadata
@@ -157,68 +158,43 @@ def detect_dose_type(text: str) -> Optional[str]:
 def is_tissue_name(text: str) -> bool:
     """
     Check if a string represents a tissue name rather than a gene target.
-    
-    Args:
-        text: Text to check
-        
-    Returns:
-        True if the text appears to be a tissue name
+    Only returns True for exact (case-insensitive, stripped) matches to known tissue types.
     """
     if not text:
         return False
-    
     text_lower = str(text).lower().strip()
-    
-    # Check for exact matches
-    if text_lower in Config.TISSUE_TYPES:
-        return True
-    
-    # Check for partial matches (e.g., "cortex" in "frontal cortex")
-    for tissue in Config.TISSUE_TYPES:
-        if tissue in text_lower or text_lower in tissue:
-            return True
-    
-    return False
+    # Only allow exact matches
+    return text_lower in Config.TISSUE_TYPES
+
 
 def classify_target_or_tissue(text: str, procedure_tissues: List[str]) -> Tuple[str, Optional[str], Optional[str]]:
     """
     Classify a text string as either a tissue or gene target.
-    
-    Args:
-        text: Text to classify
-        procedure_tissues: List of tissues found in the Procedure Request Form
-        
-    Returns:
-        Tuple of (classification, tissue_name, target_name)
-        - classification: 'tissue' or 'target'
-        - tissue_name: tissue name if it's a tissue, None otherwise
-        - target_name: target name if it's a target, None otherwise
+    Only classifies as tissue on exact match to procedure tissues or known tissue types.
     """
     if not text:
         return 'target', None, None
-    
     text_clean = str(text).strip()
-    
-    # First check if it matches tissues from Procedure Request Form
+    # Only exact match to procedure tissues
     for proc_tissue in procedure_tissues:
         if normalize_string(text_clean) == normalize_string(proc_tissue):
             return 'tissue', text_clean, None
-    
-    # Then check against our known tissue types
+    # Only exact match to known tissue types
     if is_tissue_name(text_clean):
         return 'tissue', text_clean, None
-    
     # Otherwise, treat as gene target
     return 'target', None, text_clean
+
 
 def safe_workbook_operation(file_path: str, operation_func, *args, **kwargs):
     """
     Safely open Excel workbooks and ensure they're properly closed.
-    This wrapper function handles errors and cleanup for all Excel operations,
-    preventing memory leaks and file locking issues.
+    Always uses read_only mode unless explicitly disabled.
     """
     try:
-        wb = load_workbook(file_path, data_only=True, read_only=kwargs.get('read_only', True))
+        # Default to read_only=True unless explicitly set to False
+        read_only = kwargs.pop('read_only', True)
+        wb = load_workbook(file_path, data_only=True, read_only=read_only)
         result = operation_func(wb, *args)
         wb.close()
         return result
@@ -345,14 +321,12 @@ class ExcelExtractor:
                 classification, tissue_name, target_name = classify_target_or_tissue(
                     text_clean, procedure_tissues
                 )
-                
+                print(f"Target row cell '{text_clean}': classified as {classification}")
                 if classification == 'tissue':
                     found_tissues.append(tissue_name)
-                    debug_print(f"Found tissue in target row: {tissue_name}")
                 else:
                     targets.append(target_name)
                     target_columns.append(col_start)
-                    debug_print(f"Found gene target: {target_name}")
             
             col_start += Config.TARGET_COLUMN_SPACING  # Move to next target column
         
@@ -482,96 +456,112 @@ def _create_trigger_dose_map(triggers: List[str], doses: List[Any]) -> Dict[str,
 
 def _extract_timepoint(ws) -> Optional[str]:
     """
-    Extract timepoint from the worksheet by searching for 'day' or 'timepoint' headers.
-    Finds the last non-empty value in that column.
+    Extract timepoint from specific cells where it's commonly found.
+    First checks cell A24 which commonly contains the timepoint.
+    If not found, does a limited search in nearby cells.
     """
-    # Search for timepoint header cell
-    timepoint_location = ExcelExtractor.find_cell_with_text(ws, "day")
-    if not timepoint_location:
-        timepoint_location = ExcelExtractor.find_cell_with_text(ws, "timepoint")
+    debug_print("\nExtracting timepoint from worksheet...")
     
-    if not timepoint_location:
-        return None
+    # First check cell A24 which commonly contains the timepoint
+    timepoint_cell = ws['A24'].value
+    if timepoint_cell:
+        cell_text = str(timepoint_cell).lower()
+        # Check for common timepoint patterns
+        if 'd16' in cell_text:
+            return 'D16'
+        elif 'd23' in cell_text:
+            return 'D23'
+            
+    # If not found in A24, check a limited set of nearby cells
+    for row in range(23, 26):  # Only check rows 23-25
+        for col in range(1, 5):  # Only check first 4 columns (A-D)
+            cell_value = ws.cell(row=row, column=col).value
+            if cell_value:
+                cell_text = str(cell_value).lower()
+                if 'd16' in cell_text:
+                    return 'D16'
+                elif 'd23' in cell_text:
+                    return 'D23'
+                # Also check for numeric values that might be days
+                match = re.search(r'(?:d|day\s*)?(\d+)', cell_text)
+                if match and match.group(1) in ['16', '23']:
+                    return f"D{match.group(1)}"
     
-    header_row, header_col = timepoint_location
-    
-    # Find the last non-empty value in that column
-    last_val = None
-    for row in range(header_row + 1, ws.max_row + 1):
-        val = ws.cell(row=row, column=header_col).value
-        if val is not None and str(val).strip():
-            last_val = val
-    
-    return format_timepoint(str(last_val).strip()) if last_val else None
+    debug_print("No valid timepoint found in target cells")
+    return None
 
 # ========================== RELATIVE EXPRESSION DATA EXTRACTION ==========================
-def extract_relative_expression_data(wb, procedure_tissues: List[str] = None) -> Optional[Dict[str, Any]]:
-    """
-    Extract relative expression data from the results sheet.
-    This is the main data we're interested in - target genes vs triggers with expression values.
-    
-    The data structure looks like:
-    - Row with target names (F, J, N, etc.)
-    - Rows with trigger names in column B, and corresponding data in columns G,H,I then K,L,M etc.
-    
-    Args:
-        wb: Excel workbook object
-        procedure_tissues: List of tissues from Procedure Request Form for comparison
-    
-    Returns:
-        Dictionary with 'targets' list, 'relative_expression_data' nested dict, and 'found_tissues'
-    """
-    if procedure_tissues is None:
-        procedure_tissues = []
-        
+def extract_relative_expression_data(wb, study_type: str) -> Optional[dict]:
+    """Extract relative expression data from results workbook with optimized processing."""
     sheet_name = _find_relative_expression_sheet(wb)
     if not sheet_name:
+        print("  No relative expression sheet found")
         return None
     
     ws = wb[sheet_name]
-    print(f"Using sheet: '{sheet_name}'")
-    
-    # Find the "Relative Expression by Groups" section header
-    rel_exp_location = ExcelExtractor.find_cell_with_text(
-        ws, "relative expression", Config.REL_EXP_SEARCH_ROWS
-    )
-    if not rel_exp_location:
-        print(f"Relative Expression section not found in sheet {sheet_name}")
+    if not ws:
+        print("  Failed to get worksheet")
         return None
+
+    print(f"  Found relative expression sheet: {sheet_name}")
+
+    # Pre-load all cell values into memory for faster access
+    data_matrix = [[cell.value for cell in row] for row in ws.iter_rows()]
     
-    rel_exp_row, _ = rel_exp_location
-    
-    # Extract target gene names (usually 2 rows below the header)
-    target_row = rel_exp_row + 2
-    targets, target_columns, found_tissues = ExcelExtractor.extract_targets_from_row(
-        ws, target_row, procedure_tissues
-    )
-    
-    if not targets:
-        print(f"No targets found in row {target_row}")
+    # Find headers more efficiently by scanning only the first few rows
+    headers = {}
+    for row_idx in range(min(10, len(data_matrix))):
+        for col_idx, value in enumerate(data_matrix[row_idx]):
+            if value in ['Sample Type', 'Target Name', 'RQ']:
+                headers[value] = col_idx
+                print(f"  Found header '{value}' at column {col_idx}")
+
+    if len(headers) < 3:
+        print(f"  Missing required headers. Found: {list(headers.keys())}")
         return None
+
+    # Process data in batch
+    results = {}
+    targets = set()
+    current_trigger = None
     
-    # Extract trigger names (usually 3 rows below the header, in column B)
-    trigger_start_row = target_row + 3
-    triggers = ExcelExtractor.extract_column_values(
-        ws, trigger_start_row, "B", stop_on_empty=False
-    )[:Config.MAX_TRIGGERS]
-    
-    print(f"Found targets: {targets}")
-    print(f"Found triggers: {triggers}")
-    if found_tissues:
-        print(f"Found tissues in target row: {found_tissues}")
-    
-    # Extract the actual expression data for each trigger-target combination
-    triggers_data = _extract_trigger_target_data(ws, triggers, targets, target_columns, trigger_start_row)
-    
-    # Remove triggers with no data
-    clean_triggers_data = {k: v for k, v in triggers_data.items() if v}
-    
+    for row_idx, row in enumerate(data_matrix[1:], start=1):  # Skip header row
+        sample_type = row[headers['Sample Type']]
+        if sample_type:
+            current_trigger = sample_type
+            if current_trigger not in results:
+                results[current_trigger] = {}
+                print(f"  Processing trigger: {current_trigger}")
+                
+        target = row[headers['Target Name']]
+        if target and current_trigger:
+            targets.add(target)
+            rq = row[headers['RQ']]
+            if rq is not None:
+                if target not in results[current_trigger]:
+                    results[current_trigger][target] = []
+                try:
+                    float_val = float(rq)
+                    results[current_trigger][target].append(float_val)
+                except (ValueError, TypeError):
+                    print(f"  Warning: Invalid RQ value at row {row_idx+1}: {rq}")
+                    continue
+
+    # Calculate averages in batch
+    rel_exp_data = {}
+    for trigger in results:
+        rel_exp_data[trigger] = {}
+        for target in results[trigger]:
+            values = results[trigger][target]
+            if values:
+                avg = sum(values) / len(values)
+                rel_exp_data[trigger][target] = avg
+                print(f"  {trigger} + {target}: avg = {avg:.4f} from {len(values)} values")
+
+    print(f"  Found {len(targets)} targets across {len(rel_exp_data)} triggers")
     return {
-        "targets": targets,
-        "relative_expression_data": clean_triggers_data,
-        "found_tissues": found_tissues
+        "relative_expression_data": rel_exp_data,
+        "targets": list(targets)
     }
 
 def _find_relative_expression_sheet(wb) -> Optional[str]:
@@ -708,7 +698,6 @@ def process_study_folder(study_folder: str) -> Optional[Dict[str, Any]]:
     results_folder = os.path.join(study_folder, "Results")
 
     print(f"\nProcessing study: {folder_name}")
-
     study_data = {}
 
     # Extract metadata from the main study file
@@ -721,27 +710,28 @@ def process_study_folder(study_folder: str) -> Optional[Dict[str, Any]]:
                 print(f"  {k}: {v}")
     else:
         print(f"Info file not found: {info_file}")
-    
+
     # Extract data from the results file
     results_file = _find_results_file(results_folder)
     if results_file:
-        # Extract LAR sheet data (additional metadata)
         lar_data = _extract_lar_data(results_file)
         if lar_data:
             study_data["lar_data"] = lar_data
         
-        # Extract the main relative expression data, passing tissues for comparison
-        procedure_tissues = study_data.get("tissues", [])
+        # Now just pass study_type to extract_relative_expression_data
         rel_exp_data = safe_workbook_operation(
-            results_file, extract_relative_expression_data, procedure_tissues, read_only=False
+            results_file, 
+            extract_relative_expression_data,
+            study_data.get("screening_model")
         )
+        
         if rel_exp_data:
             study_data["relative_expression"] = rel_exp_data
-            print(f"Extracted relative expression data: {len(rel_exp_data['targets'])} targets, "
-                  f"{len(rel_exp_data['relative_expression_data'])} triggers")
-            if rel_exp_data.get("found_tissues"):
-                print(f"Found additional tissues: {rel_exp_data['found_tissues']}")
-    
+            if "targets" in rel_exp_data:
+                print(f"Extracted relative expression data: {len(rel_exp_data['targets'])} targets")
+            if "relative_expression_data" in rel_exp_data:
+                print(f"Number of triggers: {len(rel_exp_data['relative_expression_data'])}")
+
     return study_data if study_data else None
 
 def _find_results_file(results_folder: str) -> Optional[str]:
@@ -818,51 +808,42 @@ def export_to_csv(all_study_data: List[Dict[str, Any]], output_path: str):
     _print_export_summary(stats, output_path)
 
 def _process_study_for_csv(study: Dict[str, Any], csv_rows: List[List[str]]) -> int:
-    """
-    Process a single study for CSV export.
-    Matches triggers from metadata with triggers from results data,
-    then creates one CSV row per trigger-target combination.
-    
-    Key steps:
-    1. Extract study metadata (name, code, model, etc.)
-    2. For each trigger in metadata:
-        - Find matching trigger in results (handles slight name variations)
-        - For each target with data for that trigger:
-            - Create a CSV row with all study info + trigger/target data
-    
-    Example:
-    If metadata has trigger "siRNA-123" and results has "siRNA123":
-    - These will be matched as the same trigger
-    - Each target (gene) measured for this trigger gets its own row
-    - Each row includes study details + specific measurements
-    """
-    if "relative_expression" not in study:
+    """Process a single study for CSV export."""
+    if not study.get("relative_expression"):
         return 0
-    
-    # Get formatted study metadata (name, code, model, etc.)
+
     study_info = _extract_study_info_for_csv(study)
-    # Get the actual expression data (trigger -> target -> values mapping)
     rel_exp_data = study["relative_expression"]["relative_expression_data"]
-    
     rows_added = 0
-    # Process each trigger from the metadata
-    for trigger, trigger_info in study_info["trigger_dose_map"].items():
-        # Find the matching trigger in the results data (may have slight name variations)
-        # e.g., "siRNA-123" in metadata might match "siRNA123" in results
-        matching_trigger = StringMatcher.find_best_match(trigger, list(rel_exp_data.keys()))
-        
-        if not matching_trigger:
+
+    # Get triggers from both metadata and results
+    metadata_triggers = list(study_info["trigger_dose_map"].keys())
+    results_triggers = list(rel_exp_data.keys())
+    
+    # Process each trigger and its targets
+    for trigger in metadata_triggers:
+        if trigger not in rel_exp_data:
             continue
-        
-        # For each target (gene) that has data for this trigger
-        trigger_data = rel_exp_data[matching_trigger]
-        for target, values in trigger_data.items():
-            # Skip if no actual values (all None/empty)
-            if all(not values.get(key) for key in ['rel_exp', 'low', 'high']):
-                continue
             
-            # Create a CSV row with: study info + trigger + target + expression values
-            row = _create_csv_row(study_info, trigger, trigger_info, target, values)
+        trigger_info = study_info["trigger_dose_map"][trigger]
+        trigger_data = rel_exp_data[trigger]
+        
+        # Create a row for each target
+        for target, value in trigger_data.items():
+            row = [
+                study_info["study_name"],
+                study_info["study_code"],
+                study_info["screening_model"],
+                str(target),
+                str(trigger),
+                str(trigger_info.get("dose", "")),
+                str(trigger_info.get("dose_type", "")),
+                study_info["timepoint"],
+                study_info["tissue"],
+                convert_to_numeric(value),  # Expression value
+                "",  # No low CI
+                ""   # No high CI
+            ]
             csv_rows.append(row)
             rows_added += 1
     
@@ -933,21 +914,20 @@ def _create_csv_row(study_info: Dict[str, Any], trigger: str, trigger_info: Dict
     11. avg_rel_exp_lsd: Lower standard deviation
     12. avg_rel_exp_hsd: Higher standard deviation
     
-    All numeric values are formatted to 4 decimal places.
-    """
+    All numeric values are formatted to 4 decimal places."""
     return [
         study_info["study_name"],
         study_info["study_code"],
         study_info["screening_model"],
         target,                                           # gene_target
         trigger,                                          # trigger (from metadata)
-        trigger_info.get("dose", ""),                     # dose (from metadata)
-        trigger_info.get("dose_type", ""),                # dose_type (detected)
+        str(trigger_info.get("dose", "")),                # dose (from metadata)
+        str(trigger_info.get("dose_type", "")),           # dose_type (detected)
         study_info["timepoint"],
         study_info["tissue"],
-        convert_to_numeric(values.get("rel_exp")),        # avg_rel_exp (4 decimal places)
-        convert_to_numeric(values.get("low")),            # avg_rel_exp_lsd (lower bound)
-        convert_to_numeric(values.get("high"))            # avg_rel_exp_hsd (upper bound)
+        convert_to_numeric(values),                       # avg_rel_exp (already averaged)
+        "",                                              # avg_rel_exp_lsd (not available)
+        ""                                               # avg_rel_exp_hsd (not available)
     ]
 
 def _print_export_summary(stats: Dict[str, int], output_path: str):
@@ -979,11 +959,11 @@ def main():
         print("No studies found in the month folder.")
         return
     
-    print(f"Processing {len(study_folders)} study folders")
+    print(f"Processing {min(len(study_folders), Config.MAX_STUDIES)} study folders")
     
-    # Process all studies
+    # Process only up to MAX_STUDIES
     all_study_data = []
-    for study_folder in study_folders:
+    for study_folder in study_folders[:Config.MAX_STUDIES]:
         study_data = process_study_folder(study_folder)
         if study_data:
             all_study_data.append(study_data)
