@@ -456,112 +456,125 @@ def _create_trigger_dose_map(triggers: List[str], doses: List[Any]) -> Dict[str,
 
 def _extract_timepoint(ws) -> Optional[str]:
     """
-    Extract timepoint from specific cells where it's commonly found.
-    First checks cell A24 which commonly contains the timepoint.
-    If not found, does a limited search in nearby cells.
+    Extract timepoint by searching column A for Day/timepoint keywords.
+    Finds the keyword cell, then moves down to find the last non-empty cell in that area.
     """
-    debug_print("\nExtracting timepoint from worksheet...")
+    debug_print("\nExtracting timepoint from column A...")
     
-    # First check cell A24 which commonly contains the timepoint
-    timepoint_cell = ws['A24'].value
-    if timepoint_cell:
-        cell_text = str(timepoint_cell).lower()
-        # Check for common timepoint patterns
-        if 'd16' in cell_text:
-            return 'D16'
-        elif 'd23' in cell_text:
-            return 'D23'
-            
-    # If not found in A24, check a limited set of nearby cells
-    for row in range(23, 26):  # Only check rows 23-25
-        for col in range(1, 5):  # Only check first 4 columns (A-D)
-            cell_value = ws.cell(row=row, column=col).value
-            if cell_value:
-                cell_text = str(cell_value).lower()
-                if 'd16' in cell_text:
-                    return 'D16'
-                elif 'd23' in cell_text:
-                    return 'D23'
-                # Also check for numeric values that might be days
-                match = re.search(r'(?:d|day\s*)?(\d+)', cell_text)
-                if match and match.group(1) in ['16', '23']:
-                    return f"D{match.group(1)}"
+    # Keywords to search for in column A
+    timepoint_keywords = ['day %', 'timepoint', 'days', 'day', 'time point', 'tp']
     
-    debug_print("No valid timepoint found in target cells")
+    # Search column A for timepoint keywords
+    keyword_found_row = None
+    for row in range(1, min(ws.max_row + 1, 100)):  # Search first 100 rows
+        cell_value = ws.cell(row=row, column=1).value  # Column A
+        if cell_value:
+            cell_text = str(cell_value).lower().strip()
+            for keyword in timepoint_keywords:
+                if keyword in cell_text:
+                    keyword_found_row = row
+                    debug_print(f"Found timepoint keyword '{keyword}' in A{row}: {cell_value}")
+                    break
+            if keyword_found_row:
+                break
+    
+    if not keyword_found_row:
+        debug_print("No timepoint keyword found in column A")
+        return None
+    
+    # Starting from the keyword row, move down column A to find the last non-empty cell
+    last_timepoint_value = None
+    last_timepoint_row = None
+    
+    for row in range(keyword_found_row, min(ws.max_row + 1, keyword_found_row + 50)):  # Check next 50 rows
+        cell_value = ws.cell(row=row, column=1).value  # Column A
+        if cell_value and str(cell_value).strip():
+            cell_text = str(cell_value).strip()
+            # Skip the header row itself
+            if row != keyword_found_row:
+                last_timepoint_value = cell_text
+                last_timepoint_row = row
+                debug_print(f"Found timepoint value in A{row}: {cell_text}")
+        else:
+            # Hit an empty cell, stop searching
+            if last_timepoint_value:
+                break
+    
+    if last_timepoint_value:
+        debug_print(f"Final timepoint value from A{last_timepoint_row}: {last_timepoint_value}")
+        return format_timepoint(last_timepoint_value)
+    
+    debug_print("No timepoint value found after keyword")
     return None
 
 # ========================== RELATIVE EXPRESSION DATA EXTRACTION ==========================
-def extract_relative_expression_data(wb, study_type: str) -> Optional[dict]:
-    """Extract relative expression data from results workbook with optimized processing."""
+def extract_relative_expression_data(wb, procedure_tissues: List[str] = None) -> Optional[Dict[str, Any]]:
+    """
+    Extract relative expression data from the results sheet.
+    This is the main data we're interested in - target genes vs triggers with expression values.
+    
+    The data structure looks like:
+    - Row with target names (F, J, N, etc.)
+    - Rows with trigger names in column B, and corresponding data in columns G,H,I then K,L,M etc.
+    
+    Args:
+        wb: Excel workbook object
+        procedure_tissues: List of tissues from Procedure Request Form for comparison
+    
+    Returns:
+        Dictionary with 'targets' list, 'relative_expression_data' nested dict, and 'found_tissues'
+    """
+    if procedure_tissues is None:
+        procedure_tissues = []
+        
     sheet_name = _find_relative_expression_sheet(wb)
     if not sheet_name:
-        print("  No relative expression sheet found")
         return None
     
     ws = wb[sheet_name]
-    if not ws:
-        print("  Failed to get worksheet")
-        return None
-
-    print(f"  Found relative expression sheet: {sheet_name}")
-
-    # Pre-load all cell values into memory for faster access
-    data_matrix = [[cell.value for cell in row] for row in ws.iter_rows()]
+    print(f"Using sheet: '{sheet_name}'")
     
-    # Find headers more efficiently by scanning only the first few rows
-    headers = {}
-    for row_idx in range(min(10, len(data_matrix))):
-        for col_idx, value in enumerate(data_matrix[row_idx]):
-            if value in ['Sample Type', 'Target Name', 'RQ']:
-                headers[value] = col_idx
-                print(f"  Found header '{value}' at column {col_idx}")
-
-    if len(headers) < 3:
-        print(f"  Missing required headers. Found: {list(headers.keys())}")
+    # Find the "Relative Expression by Groups" section header
+    rel_exp_location = ExcelExtractor.find_cell_with_text(
+        ws, "relative expression", Config.REL_EXP_SEARCH_ROWS
+    )
+    if not rel_exp_location:
+        print(f"Relative Expression section not found in sheet {sheet_name}")
         return None
-
-    # Process data in batch
-    results = {}
-    targets = set()
-    current_trigger = None
     
-    for row_idx, row in enumerate(data_matrix[1:], start=1):  # Skip header row
-        sample_type = row[headers['Sample Type']]
-        if sample_type:
-            current_trigger = sample_type
-            if current_trigger not in results:
-                results[current_trigger] = {}
-                print(f"  Processing trigger: {current_trigger}")
-                
-        target = row[headers['Target Name']]
-        if target and current_trigger:
-            targets.add(target)
-            rq = row[headers['RQ']]
-            if rq is not None:
-                if target not in results[current_trigger]:
-                    results[current_trigger][target] = []
-                try:
-                    float_val = float(rq)
-                    results[current_trigger][target].append(float_val)
-                except (ValueError, TypeError):
-                    print(f"  Warning: Invalid RQ value at row {row_idx+1}: {rq}")
-                    continue
-
-    # Calculate averages in batch
-    rel_exp_data = {}
-    for trigger in results:
-        rel_exp_data[trigger] = {}
-        for target in results[trigger]:
-            values = results[trigger][target]
-            if values:
-                avg = sum(values) / len(values)
-                rel_exp_data[trigger][target] = avg
-                print(f"  {trigger} + {target}: avg = {avg:.4f} from {len(values)} values")
-
-    print(f"  Found {len(targets)} targets across {len(rel_exp_data)} triggers")
+    rel_exp_row, _ = rel_exp_location
+    
+    # Extract target gene names (usually 2 rows below the header)
+    target_row = rel_exp_row + 2
+    targets, target_columns, found_tissues = ExcelExtractor.extract_targets_from_row(
+        ws, target_row, procedure_tissues
+    )
+    
+    if not targets:
+        print(f"No targets found in row {target_row}")
+        return None
+    
+    # Extract trigger names (usually 3 rows below the header, in column B)
+    trigger_start_row = target_row + 3
+    triggers = ExcelExtractor.extract_column_values(
+        ws, trigger_start_row, "B", stop_on_empty=False
+    )[:Config.MAX_TRIGGERS]
+    
+    print(f"Found targets: {targets}")
+    print(f"Found triggers: {triggers}")
+    if found_tissues:
+        print(f"Found tissues in target row: {found_tissues}")
+    
+    # Extract the actual expression data for each trigger-target combination
+    triggers_data = _extract_trigger_target_data(ws, triggers, targets, target_columns, trigger_start_row)
+    
+    # Remove triggers with no data
+    clean_triggers_data = {k: v for k, v in triggers_data.items() if v}
+    
     return {
-        "relative_expression_data": rel_exp_data,
-        "targets": list(targets)
+        "targets": targets,
+        "relative_expression_data": clean_triggers_data,
+        "found_tissues": found_tissues
     }
 
 def _find_relative_expression_sheet(wb) -> Optional[str]:
@@ -698,6 +711,7 @@ def process_study_folder(study_folder: str) -> Optional[Dict[str, Any]]:
     results_folder = os.path.join(study_folder, "Results")
 
     print(f"\nProcessing study: {folder_name}")
+
     study_data = {}
 
     # Extract metadata from the main study file
@@ -710,28 +724,27 @@ def process_study_folder(study_folder: str) -> Optional[Dict[str, Any]]:
                 print(f"  {k}: {v}")
     else:
         print(f"Info file not found: {info_file}")
-
+    
     # Extract data from the results file
     results_file = _find_results_file(results_folder)
     if results_file:
+        # Extract LAR sheet data (additional metadata)
         lar_data = _extract_lar_data(results_file)
         if lar_data:
             study_data["lar_data"] = lar_data
         
-        # Now just pass study_type to extract_relative_expression_data
+        # Extract the main relative expression data, passing tissues for comparison
+        procedure_tissues = study_data.get("tissues", [])
         rel_exp_data = safe_workbook_operation(
-            results_file, 
-            extract_relative_expression_data,
-            study_data.get("screening_model")
+            results_file, extract_relative_expression_data, procedure_tissues, read_only=False
         )
-        
         if rel_exp_data:
             study_data["relative_expression"] = rel_exp_data
-            if "targets" in rel_exp_data:
-                print(f"Extracted relative expression data: {len(rel_exp_data['targets'])} targets")
-            if "relative_expression_data" in rel_exp_data:
-                print(f"Number of triggers: {len(rel_exp_data['relative_expression_data'])}")
-
+            print(f"Extracted relative expression data: {len(rel_exp_data['targets'])} targets, "
+                  f"{len(rel_exp_data['relative_expression_data'])} triggers")
+            if rel_exp_data.get("found_tissues"):
+                print(f"Found additional tissues: {rel_exp_data['found_tissues']}")
+    
     return study_data if study_data else None
 
 def _find_results_file(results_folder: str) -> Optional[str]:
@@ -808,42 +821,31 @@ def export_to_csv(all_study_data: List[Dict[str, Any]], output_path: str):
     _print_export_summary(stats, output_path)
 
 def _process_study_for_csv(study: Dict[str, Any], csv_rows: List[List[str]]) -> int:
-    """Process a single study for CSV export."""
-    if not study.get("relative_expression"):
+    """
+    Process a single study for CSV export.
+    Matches triggers from metadata with triggers from results data,
+    then creates one CSV row per trigger-target combination.
+    """
+    if "relative_expression" not in study:
         return 0
-
+    
     study_info = _extract_study_info_for_csv(study)
     rel_exp_data = study["relative_expression"]["relative_expression_data"]
-    rows_added = 0
-
-    # Get triggers from both metadata and results
-    metadata_triggers = list(study_info["trigger_dose_map"].keys())
-    results_triggers = list(rel_exp_data.keys())
     
-    # Process each trigger and its targets
-    for trigger in metadata_triggers:
-        if trigger not in rel_exp_data:
-            continue
-            
-        trigger_info = study_info["trigger_dose_map"][trigger]
-        trigger_data = rel_exp_data[trigger]
+    rows_added = 0
+    # Process each trigger from the metadata
+    for trigger, trigger_info in study_info["trigger_dose_map"].items():
+        matching_trigger = StringMatcher.find_best_match(trigger, list(rel_exp_data.keys()))
         
-        # Create a row for each target
-        for target, value in trigger_data.items():
-            row = [
-                study_info["study_name"],
-                study_info["study_code"],
-                study_info["screening_model"],
-                str(target),
-                str(trigger),
-                str(trigger_info.get("dose", "")),
-                str(trigger_info.get("dose_type", "")),
-                study_info["timepoint"],
-                study_info["tissue"],
-                convert_to_numeric(value),  # Expression value
-                "",  # No low CI
-                ""   # No high CI
-            ]
+        if not matching_trigger:
+            continue
+        
+        trigger_data = rel_exp_data[matching_trigger]
+        for target, values in trigger_data.items():
+            if all(not values.get(key) for key in ['rel_exp', 'low', 'high']):
+                continue
+            
+            row = _create_csv_row(study_info, trigger, trigger_info, target, values)
             csv_rows.append(row)
             rows_added += 1
     
@@ -852,43 +854,25 @@ def _process_study_for_csv(study: Dict[str, Any], csv_rows: List[List[str]]) -> 
 def _extract_study_info_for_csv(study: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extract and format study information for CSV export.
-    
-    Key formatting rules:
-    1. Timepoint: Always starts with 'D' (e.g., "14" becomes "D14")
-    2. Study code: Wrapped in quotes to prevent Excel scientific notation
-    3. Tissue: Uses first tissue from metadata, falls back to LAR data, includes found tissues
-    
-    Example output:
-    {
-        "study_name": "Study ABC",
-        "study_code": "'1234567890'",  # Quoted to prevent scientific notation
-        "screening_model": "AAV",
-        "trigger_dose_map": {"siRNA-123": {"dose": "10mg", "dose_type": "SQ"}, ...},
-        "timepoint": "D14",
-        "tissue": "Liver"
-    }
     """
-    # Format timepoint to always start with 'D' (e.g., "14" -> "D14")
     timepoint = study.get("timepoint", "")
     if timepoint and not timepoint.startswith('D') and timepoint.strip().isdigit():
         timepoint = f"D{timepoint.strip()}"
     
-    # Use tissue from metadata, fall back to LAR data if not found
     tissue = ""
     if study.get("tissues"):
-        tissue = study["tissues"][0]  # Use first tissue from list
+        tissue = study["tissues"][0]
     elif "lar_data" in study and "tissue" in study["lar_data"]:
-        tissue = study["lar_data"]["tissue"]  # Fallback to LAR sheet data
+        tissue = study["lar_data"]["tissue"]
     
-    # If we found tissues in the target row, and no tissue from procedure, use the found tissue
     if not tissue and "relative_expression" in study:
         found_tissues = study["relative_expression"].get("found_tissues", [])
         if found_tissues:
-            tissue = found_tissues[0]  # Use first found tissue
+            tissue = found_tissues[0]
     
     return {
         "study_name": study.get("study_name", ""),
-        "study_code": f"'{study.get('study_code', '')}'" if study.get("study_code") else "",  # Prevent Excel scientific notation
+        "study_code": f"'{study.get('study_code', '')}'" if study.get("study_code") else "",
         "screening_model": study.get("screening_model", ""),
         "trigger_dose_map": study.get("trigger_dose_map", {}),
         "timepoint": timepoint,
@@ -899,35 +883,20 @@ def _create_csv_row(study_info: Dict[str, Any], trigger: str, trigger_info: Dict
                    target: str, values: Dict[str, Any]) -> List[str]:
     """
     Create a single CSV row for one trigger-target combination.
-    
-    CSV columns (in order):
-    1. study_name: Name of the study
-    2. study_code: 10-digit code (quoted to prevent Excel issues)
-    3. screening_model: Type of screening used
-    4. gene_target: Name of the target gene
-    5. trigger: Name of the trigger (e.g., siRNA sequence)
-    6. dose: Dose amount for this trigger
-    7. dose_type: Detected dose type (SQ, IV, IM, Intratracheal)
-    8. timepoint: Time point of measurement (e.g., D14)
-    9. tissue: Tissue type tested
-    10. avg_rel_exp: Average relative expression value
-    11. avg_rel_exp_lsd: Lower standard deviation
-    12. avg_rel_exp_hsd: Higher standard deviation
-    
-    All numeric values are formatted to 4 decimal places."""
+    """
     return [
         study_info["study_name"],
         study_info["study_code"],
         study_info["screening_model"],
-        target,                                           # gene_target
-        trigger,                                          # trigger (from metadata)
-        str(trigger_info.get("dose", "")),                # dose (from metadata)
-        str(trigger_info.get("dose_type", "")),           # dose_type (detected)
+        target,
+        trigger,
+        trigger_info.get("dose", ""),
+        trigger_info.get("dose_type", ""),
         study_info["timepoint"],
         study_info["tissue"],
-        convert_to_numeric(values),                       # avg_rel_exp (already averaged)
-        "",                                              # avg_rel_exp_lsd (not available)
-        ""                                               # avg_rel_exp_hsd (not available)
+        convert_to_numeric(values.get("rel_exp")),
+        convert_to_numeric(values.get("low")),
+        convert_to_numeric(values.get("high"))
     ]
 
 def _print_export_summary(stats: Dict[str, int], output_path: str):
@@ -942,13 +911,7 @@ def _print_export_summary(stats: Dict[str, int], output_path: str):
 def main():
     """
     Main execution function.
-    
-    Process flow:
-    1. Find all study folders in the month directory
-    2. Process each folder to extract metadata and results data
-    3. Export all data to JSON (raw) and CSV (formatted) files
     """
-    # Find all subdirectories in the month folder (each is a study)
     study_folders = [
         os.path.join(Config.MONTH_FOLDER, name)
         for name in os.listdir(Config.MONTH_FOLDER)
@@ -958,28 +921,24 @@ def main():
     if not study_folders:
         print("No studies found in the month folder.")
         return
-    
+
     print(f"Processing {min(len(study_folders), Config.MAX_STUDIES)} study folders")
     
-    # Process only up to MAX_STUDIES
     all_study_data = []
     for study_folder in study_folders[:Config.MAX_STUDIES]:
         study_data = process_study_folder(study_folder)
         if study_data:
             all_study_data.append(study_data)
-    
-    # Generate output files with timestamp
+
     timestamp = datetime.now().strftime("%Y%m%d")
     base_output_dir = os.path.dirname(Config.MONTH_FOLDER)
     month_name = os.path.basename(Config.MONTH_FOLDER).split(' ')[0]
     
-    # Export raw data to JSON
     json_output_path = os.path.join(base_output_dir, f"study_metadata_{month_name}_{timestamp}.json")
     with open(json_output_path, "w", encoding="utf-8") as f:
         json.dump(all_study_data, f, indent=2, ensure_ascii=False)
     print(f"\nWrote study metadata to {json_output_path}")
     
-    # Export formatted data to CSV
     csv_output_path = os.path.join(base_output_dir, f"study_data_{month_name}_{timestamp}.csv")
     export_to_csv(all_study_data, csv_output_path)
 
