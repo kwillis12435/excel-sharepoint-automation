@@ -3,13 +3,13 @@ import os
 from openpyxl import load_workbook, Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.worksheet.freeze_panes import FreezePane
+from openpyxl.styles import Font, Alignment
 import re
 import json
 import csv
 from datetime import datetime
 import traceback
 from typing import Dict, List, Optional, Tuple, Any
-from openpyxl.styles import Font, Alignment
 
 # ========================== CONFIGURATION ==========================
 class Config:
@@ -860,6 +860,7 @@ def export_to_excel(all_study_data: List[Dict[str, Any]], output_path: str):
     - Numbers are formatted to 4 decimal places
     - Study code is formatted as text (prevents scientific notation)
     - Columns are auto-sized for readability
+    - Headers are frozen for easy scrolling
     """
     # Create a new workbook and select the active sheet
     wb = Workbook()
@@ -877,6 +878,9 @@ def export_to_excel(all_study_data: List[Dict[str, Any]], output_path: str):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = Font(bold=True)
         cell.alignment = Alignment(horizontal='center')
+    
+    # Freeze the header row
+    ws.freeze_panes = ws['A2']
     
     # Track statistics
     stats = {"studies_processed": 0, "studies_with_data": 0, "total_rows": 0}
