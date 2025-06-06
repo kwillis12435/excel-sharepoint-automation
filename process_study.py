@@ -47,6 +47,21 @@ class Config:
     TARGET_COLUMN_SPACING = 4              # Targets are spaced 4 columns apart (F, J, N, etc.)
     MAX_TARGETS = 30                       # Safety limit to prevent infinite loops
     MAX_TRIGGERS = 20                      # Safety limit for trigger extraction
+    
+    # Known dose types to search for
+    DOSE_TYPES = {'SQ', 'IV', 'IM', 'intratracheal', 'subcutaneous', 'intravenous', 'intramuscular'}
+    
+    # Known tissue types to differentiate from gene targets
+    TISSUE_TYPES = {
+        'lung', 'cerebellum', 'cortex', 'eye', 'liver', 'heart', 'kidney', 'spleen',
+        'brain', 'muscle', 'skin', 'blood', 'plasma', 'serum', 'bone', 'fat',
+        'adipose', 'pancreas', 'stomach', 'intestine', 'colon', 'bladder',
+        'prostate', 'ovary', 'uterus', 'hippocampus', 'cerebral cortex',
+        'frontal cortex', 'motor cortex', 'brainstem', 'midbrain', 'spinal cord',
+        'thoracic spinal cord', 'lumbar spinal cord', 'cervical spinal cord',
+        'skeletal muscle', 'cardiac muscle', 'diaphragm', 'quadriceps',
+        'gastrocnemius', 'tibialis anterior', 'retina', 'optic nerve'
+    }
 
 # ========================== UTILITY FUNCTIONS ==========================
 def debug_print(*args, **kwargs):
@@ -108,6 +123,93 @@ def convert_to_numeric(value: Any) -> str:
         return f"{float_val:.4f}" if float_val != 0 else "0.0000"
     except (ValueError, TypeError):
         return str(value).strip()
+
+def detect_dose_type(text: str) -> Optional[str]:
+    """
+    Detect dose type (SQ, IV, IM, intratracheal) from text.
+    
+    Args:
+        text: Text to search for dose type indicators
+        
+    Returns:
+        Detected dose type or None if not found
+    """
+    if not text:
+        return None
+    
+    text_lower = str(text).lower().strip()
+    
+    # Check for exact matches first
+    for dose_type in Config.DOSE_TYPES:
+        if dose_type.lower() in text_lower:
+            # Return standardized format
+            if dose_type.lower() in ['sq', 'subcutaneous']:
+                return 'SQ'
+            elif dose_type.lower() in ['iv', 'intravenous']:
+                return 'IV'
+            elif dose_type.lower() in ['im', 'intramuscular']:
+                return 'IM'
+            elif dose_type.lower() == 'intratracheal':
+                return 'Intratracheal'
+    
+    return None
+
+def is_tissue_name(text: str) -> bool:
+    """
+    Check if a string represents a tissue name rather than a gene target.
+    
+    Args:
+        text: Text to check
+        
+    Returns:
+        True if the text appears to be a tissue name
+    """
+    if not text:
+        return False
+    
+    text_lower = str(text).lower().strip()
+    
+    # Check for exact matches
+    if text_lower in Config.TISSUE_TYPES:
+        return True
+    
+    # Check for partial matches (e.g., "cortex" in "frontal cortex")
+    for tissue in Config.TISSUE_TYPES:
+        if tissue in text_lower or text_lower in tissue:
+            return True
+    
+    return False
+
+def classify_target_or_tissue(text: str, procedure_tissues: List[str]) -> Tuple[str, Optional[str], Optional[str]]:
+    """
+    Classify a text string as either a tissue or gene target.
+    
+    Args:
+        text: Text to classify
+        procedure_tissues: List of tissues found in the Procedure Request Form
+        
+    Returns:
+        Tuple of (classification, tissue_name, target_name)
+        - classification: 'tissue' or 'target'
+        - tissue_name: tissue name if it's a tissue, None otherwise
+        - target_name: target name if it's a target, None otherwise
+    """
+    if not text:
+        return 'target', None, None
+    
+    text_clean = str(text).strip()
+    
+    # First check if it matches tissues from Procedure Request Form
+    for proc_tissue in procedure_tissues:
+        if normalize_string(text_clean) == normalize_string(proc_tissue):
+            return 'tissue', text_clean, None
+    
+    # Then check against our known tissue types
+    if is_tissue_name(text_clean):
+        return 'tissue', text_clean, None
+    
+    # Otherwise, treat as gene target
+    return 'target', None, text_clean
 
 def safe_workbook_operation(file_path: str, operation_func, *args, **kwargs):
     """
@@ -207,37 +309,54 @@ class ExcelExtractor:
         return None
 
     @staticmethod
-    def extract_targets_from_row(ws, row: int) -> Tuple[List[str], List[int]]:
+    def extract_targets_from_row(ws, row: int, procedure_tissues: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
         """
         Extract target gene names and their column positions from a specific row.
+        Also identifies any tissues found in the target row.
         Targets are typically spaced every 4 columns (F, J, N, R, etc.).
         
         Args:
             ws: Excel worksheet object
             row: Row number containing target names
+            procedure_tissues: List of tissues from Procedure Request Form for comparison
             
         Returns:
-            Tuple of (target_names, column_numbers)
+            Tuple of (target_names, column_numbers, found_tissues)
         """
-        targets, target_columns = [], []
+        if procedure_tissues is None:
+            procedure_tissues = []
+            
+        targets, target_columns, found_tissues = [], [], []
         col_start = Config.TARGET_START_COLUMN  # Start at column F (6)
         zero_count = 0
         
-        while len(targets) < Config.MAX_TARGETS:
-            target_value = ws.cell(row=row, column=col_start).value
+        while len(targets) + len(found_tissues) < Config.MAX_TARGETS:
+            cell_value = ws.cell(row=row, column=col_start).value
             
-            if is_empty_or_zero(target_value):
+            if is_empty_or_zero(cell_value):
                 zero_count += 1
                 if zero_count >= 5:  # Stop after 5 consecutive empty cells
                     break
             else:
                 zero_count = 0
-                targets.append(str(target_value).strip())
-                target_columns.append(col_start)
+                text_clean = str(cell_value).strip()
+                
+                # Classify as tissue or target
+                classification, tissue_name, target_name = classify_target_or_tissue(
+                    text_clean, procedure_tissues
+                )
+                
+                if classification == 'tissue':
+                    found_tissues.append(tissue_name)
+                    debug_print(f"Found tissue in target row: {tissue_name}")
+                else:
+                    targets.append(target_name)
+                    target_columns.append(col_start)
+                    debug_print(f"Found gene target: {target_name}")
             
             col_start += Config.TARGET_COLUMN_SPACING  # Move to next target column
         
-        return targets, target_columns
+        return targets, target_columns, found_tissues
 
 # ========================== STUDY METADATA EXTRACTION ==========================
 def extract_study_metadata(wb, folder_name: str) -> Dict[str, Any]:
@@ -333,15 +452,33 @@ def _extract_unique_tissues(ws) -> List[str]:
     )
     return list(dict.fromkeys(tissues))  # Remove duplicates, preserve order
 
-def _create_trigger_dose_map(triggers: List[str], doses: List[Any]) -> Dict[str, Any]:
+def _create_trigger_dose_map(triggers: List[str], doses: List[Any]) -> Dict[str, Dict[str, Any]]:
     """
-    Create a dictionary mapping each trigger to its corresponding dose.
+    Create a dictionary mapping each trigger to its corresponding dose and detected dose type.
     Ensures both lists are the same length by padding doses with None.
+    Now also detects dose types (SQ, IV, IM, intratracheal).
+    
+    Returns:
+        Dictionary mapping trigger -> {"dose": dose_value, "dose_type": detected_type}
     """
     # Ensure lists are same length
     while len(doses) < len(triggers):
         doses.append(None)
-    return {str(trigger): dose for trigger, dose in zip(triggers, doses[:len(triggers)])}
+    
+    trigger_dose_map = {}
+    for trigger, dose in zip(triggers, doses[:len(triggers)]):
+        dose_str = str(dose) if dose is not None else ""
+        detected_dose_type = detect_dose_type(dose_str)
+        
+        trigger_dose_map[str(trigger)] = {
+            "dose": dose,
+            "dose_type": detected_dose_type
+        }
+        
+        if detected_dose_type:
+            debug_print(f"Detected dose type '{detected_dose_type}' for trigger '{trigger}': {dose_str}")
+    
+    return trigger_dose_map
 
 def _extract_timepoint(ws) -> Optional[str]:
     """
@@ -368,7 +505,7 @@ def _extract_timepoint(ws) -> Optional[str]:
     return format_timepoint(str(last_val).strip()) if last_val else None
 
 # ========================== RELATIVE EXPRESSION DATA EXTRACTION ==========================
-def extract_relative_expression_data(wb) -> Optional[Dict[str, Any]]:
+def extract_relative_expression_data(wb, procedure_tissues: List[str] = None) -> Optional[Dict[str, Any]]:
     """
     Extract relative expression data from the results sheet.
     This is the main data we're interested in - target genes vs triggers with expression values.
@@ -377,9 +514,16 @@ def extract_relative_expression_data(wb) -> Optional[Dict[str, Any]]:
     - Row with target names (F, J, N, etc.)
     - Rows with trigger names in column B, and corresponding data in columns G,H,I then K,L,M etc.
     
+    Args:
+        wb: Excel workbook object
+        procedure_tissues: List of tissues from Procedure Request Form for comparison
+    
     Returns:
-        Dictionary with 'targets' list and 'relative_expression_data' nested dict
+        Dictionary with 'targets' list, 'relative_expression_data' nested dict, and 'found_tissues'
     """
+    if procedure_tissues is None:
+        procedure_tissues = []
+        
     sheet_name = _find_relative_expression_sheet(wb)
     if not sheet_name:
         return None
@@ -399,7 +543,9 @@ def extract_relative_expression_data(wb) -> Optional[Dict[str, Any]]:
     
     # Extract target gene names (usually 2 rows below the header)
     target_row = rel_exp_row + 2
-    targets, target_columns = ExcelExtractor.extract_targets_from_row(ws, target_row)
+    targets, target_columns, found_tissues = ExcelExtractor.extract_targets_from_row(
+        ws, target_row, procedure_tissues
+    )
     
     if not targets:
         print(f"No targets found in row {target_row}")
@@ -413,6 +559,8 @@ def extract_relative_expression_data(wb) -> Optional[Dict[str, Any]]:
     
     print(f"Found targets: {targets}")
     print(f"Found triggers: {triggers}")
+    if found_tissues:
+        print(f"Found tissues in target row: {found_tissues}")
     
     # Extract the actual expression data for each trigger-target combination
     triggers_data = _extract_trigger_target_data(ws, triggers, targets, target_columns, trigger_start_row)
@@ -422,7 +570,8 @@ def extract_relative_expression_data(wb) -> Optional[Dict[str, Any]]:
     
     return {
         "targets": targets,
-        "relative_expression_data": clean_triggers_data
+        "relative_expression_data": clean_triggers_data,
+        "found_tissues": found_tissues
     }
 
 def _find_relative_expression_sheet(wb) -> Optional[str]:
@@ -557,11 +706,11 @@ def process_study_folder(study_folder: str) -> Optional[Dict[str, Any]]:
     folder_name = os.path.basename(study_folder)
     info_file = os.path.join(study_folder, f"{folder_name}.xlsm")
     results_folder = os.path.join(study_folder, "Results")
-    
+
     print(f"\nProcessing study: {folder_name}")
-    
+
     study_data = {}
-    
+
     # Extract metadata from the main study file
     if os.path.exists(info_file):
         metadata = safe_workbook_operation(info_file, extract_study_metadata, folder_name)
@@ -581,14 +730,17 @@ def process_study_folder(study_folder: str) -> Optional[Dict[str, Any]]:
         if lar_data:
             study_data["lar_data"] = lar_data
         
-        # Extract the main relative expression data
+        # Extract the main relative expression data, passing tissues for comparison
+        procedure_tissues = study_data.get("tissues", [])
         rel_exp_data = safe_workbook_operation(
-            results_file, extract_relative_expression_data, read_only=False
+            results_file, extract_relative_expression_data, procedure_tissues, read_only=False
         )
         if rel_exp_data:
             study_data["relative_expression"] = rel_exp_data
             print(f"Extracted relative expression data: {len(rel_exp_data['targets'])} targets, "
                   f"{len(rel_exp_data['relative_expression_data'])} triggers")
+            if rel_exp_data.get("found_tissues"):
+                print(f"Found additional tissues: {rel_exp_data['found_tissues']}")
     
     return study_data if study_data else None
 
@@ -641,12 +793,12 @@ def export_to_csv(all_study_data: List[Dict[str, Any]], output_path: str):
     Export all study data to a CSV file in a standardized format.
     
     The CSV will have one row per trigger-target combination with columns:
-    - study_name, study_code, screening_model, gene_target, trigger, dose,
+    - study_name, study_code, screening_model, gene_target, trigger, dose, dose_type,
       timepoint, tissue, avg_rel_exp, avg_rel_exp_lsd, avg_rel_exp_hsd
     """
     header = [
         "study_name", "study_code", "screening_model", "gene_target", "trigger", 
-        "dose", "timepoint", "tissue", "avg_rel_exp", "avg_rel_exp_lsd", "avg_rel_exp_hsd"
+        "dose", "dose_type", "timepoint", "tissue", "avg_rel_exp", "avg_rel_exp_lsd", "avg_rel_exp_hsd"
     ]
     
     csv_rows = [header]
@@ -670,31 +822,47 @@ def _process_study_for_csv(study: Dict[str, Any], csv_rows: List[List[str]]) -> 
     Process a single study for CSV export.
     Matches triggers from metadata with triggers from results data,
     then creates one CSV row per trigger-target combination.
+    
+    Key steps:
+    1. Extract study metadata (name, code, model, etc.)
+    2. For each trigger in metadata:
+        - Find matching trigger in results (handles slight name variations)
+        - For each target with data for that trigger:
+            - Create a CSV row with all study info + trigger/target data
+    
+    Example:
+    If metadata has trigger "siRNA-123" and results has "siRNA123":
+    - These will be matched as the same trigger
+    - Each target (gene) measured for this trigger gets its own row
+    - Each row includes study details + specific measurements
     """
     if "relative_expression" not in study:
         return 0
     
+    # Get formatted study metadata (name, code, model, etc.)
     study_info = _extract_study_info_for_csv(study)
+    # Get the actual expression data (trigger -> target -> values mapping)
     rel_exp_data = study["relative_expression"]["relative_expression_data"]
     
     rows_added = 0
     # Process each trigger from the metadata
-    for trigger, dose in study_info["trigger_dose_map"].items():
+    for trigger, trigger_info in study_info["trigger_dose_map"].items():
         # Find the matching trigger in the results data (may have slight name variations)
+        # e.g., "siRNA-123" in metadata might match "siRNA123" in results
         matching_trigger = StringMatcher.find_best_match(trigger, list(rel_exp_data.keys()))
         
         if not matching_trigger:
             continue
         
-        # For each target that has data for this trigger
+        # For each target (gene) that has data for this trigger
         trigger_data = rel_exp_data[matching_trigger]
         for target, values in trigger_data.items():
-            # Skip if no actual values
+            # Skip if no actual values (all None/empty)
             if all(not values.get(key) for key in ['rel_exp', 'low', 'high']):
                 continue
             
-            # Create a CSV row for this trigger-target combination
-            row = _create_csv_row(study_info, trigger, dose, target, values)
+            # Create a CSV row with: study info + trigger + target + expression values
+            row = _create_csv_row(study_info, trigger, trigger_info, target, values)
             csv_rows.append(row)
             rows_added += 1
     
@@ -703,45 +871,83 @@ def _process_study_for_csv(study: Dict[str, Any], csv_rows: List[List[str]]) -> 
 def _extract_study_info_for_csv(study: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extract and format study information for CSV export.
-    Handles formatting of timepoint and tissue data.
+    
+    Key formatting rules:
+    1. Timepoint: Always starts with 'D' (e.g., "14" becomes "D14")
+    2. Study code: Wrapped in quotes to prevent Excel scientific notation
+    3. Tissue: Uses first tissue from metadata, falls back to LAR data, includes found tissues
+    
+    Example output:
+    {
+        "study_name": "Study ABC",
+        "study_code": "'1234567890'",  # Quoted to prevent scientific notation
+        "screening_model": "AAV",
+        "trigger_dose_map": {"siRNA-123": {"dose": "10mg", "dose_type": "SQ"}, ...},
+        "timepoint": "D14",
+        "tissue": "Liver"
+    }
     """
+    # Format timepoint to always start with 'D' (e.g., "14" -> "D14")
     timepoint = study.get("timepoint", "")
     if timepoint and not timepoint.startswith('D') and timepoint.strip().isdigit():
         timepoint = f"D{timepoint.strip()}"
     
-    # Use tissue from metadata, fall back to LAR data
+    # Use tissue from metadata, fall back to LAR data if not found
     tissue = ""
     if study.get("tissues"):
-        tissue = study["tissues"][0]
+        tissue = study["tissues"][0]  # Use first tissue from list
     elif "lar_data" in study and "tissue" in study["lar_data"]:
-        tissue = study["lar_data"]["tissue"]
+        tissue = study["lar_data"]["tissue"]  # Fallback to LAR sheet data
+    
+    # If we found tissues in the target row, and no tissue from procedure, use the found tissue
+    if not tissue and "relative_expression" in study:
+        found_tissues = study["relative_expression"].get("found_tissues", [])
+        if found_tissues:
+            tissue = found_tissues[0]  # Use first found tissue
     
     return {
         "study_name": study.get("study_name", ""),
-        "study_code": f"'{study.get('study_code', '')}'" if study.get("study_code") else "",  # Prevent scientific notation
+        "study_code": f"'{study.get('study_code', '')}'" if study.get("study_code") else "",  # Prevent Excel scientific notation
         "screening_model": study.get("screening_model", ""),
         "trigger_dose_map": study.get("trigger_dose_map", {}),
         "timepoint": timepoint,
         "tissue": tissue
     }
 
-def _create_csv_row(study_info: Dict[str, Any], trigger: str, dose: Any, 
+def _create_csv_row(study_info: Dict[str, Any], trigger: str, trigger_info: Dict[str, Any], 
                    target: str, values: Dict[str, Any]) -> List[str]:
     """
     Create a single CSV row for one trigger-target combination.
+    
+    CSV columns (in order):
+    1. study_name: Name of the study
+    2. study_code: 10-digit code (quoted to prevent Excel issues)
+    3. screening_model: Type of screening used
+    4. gene_target: Name of the target gene
+    5. trigger: Name of the trigger (e.g., siRNA sequence)
+    6. dose: Dose amount for this trigger
+    7. dose_type: Detected dose type (SQ, IV, IM, Intratracheal)
+    8. timepoint: Time point of measurement (e.g., D14)
+    9. tissue: Tissue type tested
+    10. avg_rel_exp: Average relative expression value
+    11. avg_rel_exp_lsd: Lower standard deviation
+    12. avg_rel_exp_hsd: Higher standard deviation
+    
+    All numeric values are formatted to 4 decimal places.
     """
     return [
         study_info["study_name"],
         study_info["study_code"],
         study_info["screening_model"],
-        target,                                    # gene_target
-        trigger,                                   # trigger (from metadata)
-        dose,                                      # dose (from metadata)
+        target,                                           # gene_target
+        trigger,                                          # trigger (from metadata)
+        trigger_info.get("dose", ""),                     # dose (from metadata)
+        trigger_info.get("dose_type", ""),                # dose_type (detected)
         study_info["timepoint"],
         study_info["tissue"],
-        convert_to_numeric(values.get("rel_exp")),  # avg_rel_exp
-        convert_to_numeric(values.get("low")),      # avg_rel_exp_lsd  
-        convert_to_numeric(values.get("high"))      # avg_rel_exp_hsd
+        convert_to_numeric(values.get("rel_exp")),        # avg_rel_exp (4 decimal places)
+        convert_to_numeric(values.get("low")),            # avg_rel_exp_lsd (lower bound)
+        convert_to_numeric(values.get("high"))            # avg_rel_exp_hsd (upper bound)
     ]
 
 def _print_export_summary(stats: Dict[str, int], output_path: str):
