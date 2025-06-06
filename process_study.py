@@ -1,12 +1,15 @@
 import pandas as pd
 import os
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.worksheet.freeze_panes import FreezePane
 import re
 import json
 import csv
 from datetime import datetime
 import traceback
 from typing import Dict, List, Optional, Tuple, Any
+from openpyxl.styles import Font, Alignment
 
 # ========================== CONFIGURATION ==========================
 class Config:
@@ -18,6 +21,7 @@ class Config:
     # Main folder containing all study subfolders to process
     MONTH_FOLDER = r"C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024"
     DEBUG = False  # Set to True to see detailed debug output during processing
+    MAX_STUDIES = 5  # LIMIT TO 5 STUDIES FOR TESTING
     
     # Excel sheet names we're looking for in the workbooks
     PROCEDURE_SHEET = "Procedure Request Form"  # Contains study metadata
@@ -48,6 +52,33 @@ class Config:
     TARGET_COLUMN_SPACING = 4              # Targets are spaced 4 columns apart (F, J, N, etc.)
     MAX_TARGETS = 30                       # Safety limit to prevent infinite loops
     MAX_TRIGGERS = 20                      # Safety limit for trigger extraction
+    
+    # KNOWN TISSUES LIST - Add more as needed
+    KNOWN_TISSUES = {
+        # Brain/CNS tissues
+        'brain', 'cortex', 'cerebellum', 'hippocampus', 'cerebral cortex', 
+        'frontal cortex', 'motor cortex', 'brainstem', 'midbrain',
+        'spinal cord', 'thoracic spinal cord', 'lumbar spinal cord', 'cervical spinal cord',
+        
+        # Organs
+        'heart', 'lung', 'liver', 'kidney', 'spleen', 'pancreas', 'stomach',
+        'intestine', 'colon', 'bladder', 'prostate', 'ovary', 'uterus',
+        
+        # Muscle/skeletal
+        'muscle', 'skeletal muscle', 'cardiac muscle', 'diaphragm',
+        'quadriceps', 'gastrocnemius', 'tibialis anterior',
+        
+        # Other
+        'skin', 'adipose', 'fat', 'bone', 'blood', 'plasma', 'serum',
+        'eye', 'retina', 'optic nerve'
+    }
+    
+    # KNOWN TARGET GENES - Add more as needed
+    KNOWN_TARGETS = {
+        'sod1', 'aif1', 'tardbp', 'fus', 'c9orf72', 'apoe', 'mapt',
+        'psen1', 'psen2', 'app', 'snca', 'lrrk2', 'pink1', 'park2',
+        'gba', 'vcp', 'ubqln2', 'optn', 'tbk1', 'ccnf', 'chchd10'
+    }
 
 # ========================== UTILITY FUNCTIONS ==========================
 def debug_print(*args, **kwargs):
@@ -109,6 +140,48 @@ def convert_to_numeric(value: Any) -> str:
         return f"{float_val:.4f}" if float_val != 0 else "0.0000"
     except (ValueError, TypeError):
         return str(value).strip()
+
+def is_valid_tissue(tissue_name: str) -> bool:
+    """
+    Check if a string represents a valid tissue name.
+    Uses the known tissues list for validation.
+    """
+    if not tissue_name:
+        return False
+    
+    tissue_clean = tissue_name.lower().strip()
+    
+    # Direct match
+    if tissue_clean in Config.KNOWN_TISSUES:
+        return True
+    
+    # Partial match (tissue name contains known tissue)
+    for known_tissue in Config.KNOWN_TISSUES:
+        if known_tissue in tissue_clean or tissue_clean in known_tissue:
+            return True
+    
+    return False
+
+def is_valid_target(target_name: str) -> bool:
+    """
+    Check if a string represents a valid target gene name.
+    Uses the known targets list for validation.
+    """
+    if not target_name:
+        return False
+    
+    target_clean = target_name.lower().strip()
+    
+    # Direct match
+    if target_clean in Config.KNOWN_TARGETS:
+        return True
+    
+    # Partial match for gene names that might have suffixes/prefixes
+    for known_target in Config.KNOWN_TARGETS:
+        if known_target in target_clean or target_clean.startswith(known_target):
+            return True
+    
+    return False
 
 def safe_workbook_operation(file_path: str, operation_func, *args, **kwargs):
     """
@@ -206,12 +279,13 @@ class ExcelExtractor:
                 if cell_value and isinstance(cell_value, str) and search_text.lower() in cell_value.lower():
                     return row, col
         return None
-
+        
     @staticmethod
     def extract_targets_from_row(ws, row: int) -> Tuple[List[str], List[int]]:
         """
         Extract target gene names and their column positions from a specific row.
         Targets are typically spaced every 4 columns (F, J, N, R, etc.).
+        NOW VALIDATES TARGETS AGAINST KNOWN GENE LIST.
         
         Args:
             ws: Excel worksheet object
@@ -233,8 +307,15 @@ class ExcelExtractor:
                     break
             else:
                 zero_count = 0
-                targets.append(str(target_value).strip())
-                target_columns.append(col_start)
+                target_str = str(target_value).strip()
+                
+                # VALIDATE TARGET - only include if it's a known gene
+                if is_valid_target(target_str):
+                    targets.append(target_str)
+                    target_columns.append(col_start)
+                    debug_print(f"Found valid target: {target_str}")
+                else:
+                    debug_print(f"Skipping invalid target: {target_str}")
             
             col_start += Config.TARGET_COLUMN_SPACING  # Move to next target column
         
@@ -327,12 +408,23 @@ def _extract_study_code(cell_value: Any, folder_name: str) -> Optional[str]:
 def _extract_unique_tissues(ws) -> List[str]:
     """
     Extract unique tissue types from the tissues column.
+    NOW VALIDATES TISSUES AGAINST KNOWN TISSUE LIST.
     Removes duplicates while preserving order.
     """
-    tissues = ExcelExtractor.extract_column_values(
+    all_tissues = ExcelExtractor.extract_column_values(
         ws, Config.TISSUES_START_ROW, Config.TISSUES_COLUMN
     )
-    return list(dict.fromkeys(tissues))  # Remove duplicates, preserve order
+    
+    # Filter to only valid tissues
+    valid_tissues = []
+    for tissue in all_tissues:
+        if is_valid_tissue(tissue):
+            valid_tissues.append(tissue)
+            debug_print(f"Found valid tissue: {tissue}")
+        else:
+            debug_print(f"Skipping invalid tissue: {tissue}")
+    
+    return list(dict.fromkeys(valid_tissues))  # Remove duplicates, preserve order
 
 def _create_trigger_dose_map(triggers: List[str], doses: List[Any]) -> Dict[str, Any]:
     """
@@ -403,7 +495,7 @@ def extract_relative_expression_data(wb) -> Optional[Dict[str, Any]]:
     targets, target_columns = ExcelExtractor.extract_targets_from_row(ws, target_row)
     
     if not targets:
-        print(f"No targets found in row {target_row}")
+        print(f"No valid targets found in row {target_row}")
         return None
     
     # Extract trigger names (usually 3 rows below the header, in column B)
@@ -412,7 +504,7 @@ def extract_relative_expression_data(wb) -> Optional[Dict[str, Any]]:
         ws, trigger_start_row, "B", stop_on_empty=False
     )[:Config.MAX_TRIGGERS]
     
-    print(f"Found targets: {targets}")
+    print(f"Found valid targets: {targets}")
     print(f"Found triggers: {triggers}")
     
     # Extract the actual expression data for each trigger-target combination
@@ -470,7 +562,7 @@ def _extract_trigger_target_data(ws, triggers: List[str], targets: List[str],
     for trigger_idx, trigger in enumerate(triggers):
         if is_empty_or_zero(trigger):
             continue
-            
+        
         trigger_row = trigger_start_row + trigger_idx
         triggers_data[trigger] = {}
         
@@ -558,11 +650,11 @@ def process_study_folder(study_folder: str) -> Optional[Dict[str, Any]]:
     folder_name = os.path.basename(study_folder)
     info_file = os.path.join(study_folder, f"{folder_name}.xlsm")
     results_folder = os.path.join(study_folder, "Results")
-    
+
     print(f"\nProcessing study: {folder_name}")
-    
+
     study_data = {}
-    
+
     # Extract metadata from the main study file
     if os.path.exists(info_file):
         metadata = safe_workbook_operation(info_file, extract_study_metadata, folder_name)
@@ -611,6 +703,7 @@ def _extract_lar_data(results_file: str) -> Optional[Dict[str, str]]:
     """
     Extract additional metadata from the LAR Sheet.
     Searches for keyword-value pairs in the first 20 rows.
+    NOW VALIDATES TISSUE NAMES.
     """
     try:
         if Config.LAR_SHEET not in pd.ExcelFile(results_file).sheet_names:
@@ -629,6 +722,10 @@ def _extract_lar_data(results_file: str) -> Optional[Dict[str, str]]:
                     field_name = next(k for k in ["trigger", "dose", "tissue", "timepoint"] if k in cell)
                     field_value = str(row[col + 1]).strip() if col + 1 < len(row) else ""
                     if field_value != "nan":
+                        # Validate tissue names
+                        if field_name == "tissue" and not is_valid_tissue(field_value):
+                            debug_print(f"Skipping invalid LAR tissue: {field_value}")
+                            continue
                         fields[field_name] = field_value
         
         return fields if fields else None
@@ -692,11 +789,11 @@ def _process_study_for_csv(study: Dict[str, Any], csv_rows: List[List[str]]) -> 
         for target, values in trigger_data.items():
             # Skip if no actual values
             if all(not values.get(key) for key in ['rel_exp', 'low', 'high']):
-                continue
+            continue
             
             # Create a CSV row for this trigger-target combination
             row = _create_csv_row(study_info, trigger, dose, target, values)
-            csv_rows.append(row)
+                csv_rows.append(row)
             rows_added += 1
     
     return rows_added
@@ -754,14 +851,118 @@ def _print_export_summary(stats: Dict[str, int], output_path: str):
     print(f"- Output file: {output_path}")
 
 # ========================== MAIN EXECUTION ==========================
+def export_to_excel(all_study_data: List[Dict[str, Any]], output_path: str):
+    """
+    Export all study data to an Excel file with formatting.
+    
+    Features:
+    - Headers are bold and centered
+    - Numbers are formatted to 4 decimal places
+    - Study code is formatted as text (prevents scientific notation)
+    - Columns are auto-sized for readability
+    """
+    # Create a new workbook and select the active sheet
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Study Data"
+    
+    # Define headers
+    headers = [
+        "Study Name", "Study Code", "Screening Model", "Gene Target", "Trigger", 
+        "Dose", "Timepoint", "Tissue", "Avg Rel Exp", "Avg Rel Exp LSD", "Avg Rel Exp HSD"
+    ]
+    
+    # Write headers
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Track statistics
+    stats = {"studies_processed": 0, "studies_with_data": 0, "total_rows": 0}
+    current_row = 2  # Start after headers
+    
+    # Process each study
+    for study in all_study_data:
+        stats["studies_processed"] += 1
+        
+        if "relative_expression" not in study:
+            continue
+            
+        study_info = _extract_study_info_for_csv(study)
+        rel_exp_data = study["relative_expression"]["relative_expression_data"]
+        
+        # Process each trigger-target combination
+        for trigger, dose in study_info["trigger_dose_map"].items():
+            matching_trigger = StringMatcher.find_best_match(trigger, list(rel_exp_data.keys()))
+            if not matching_trigger:
+                continue
+            
+            trigger_data = rel_exp_data[matching_trigger]
+            for target, values in trigger_data.items():
+                if all(not values.get(key) for key in ['rel_exp', 'low', 'high']):
+                    continue
+                
+                # Create row data
+                row_data = [
+                    study_info["study_name"],
+                    study_info["study_code"].strip("'"),  # Remove quotes, will format as text
+                    study_info["screening_model"],
+                    target,
+                    trigger,
+                    dose,
+                    study_info["timepoint"],
+                    study_info["tissue"],
+                    values.get("rel_exp", ""),
+                    values.get("low", ""),
+                    values.get("high", "")
+                ]
+                
+                # Write row data
+                for col, value in enumerate(row_data, 1):
+                    cell = ws.cell(row=current_row, column=col, value=value)
+                    
+                    # Format study code as text
+                    if col == 2:  # Study Code column
+                        cell.number_format = '@'
+                    
+                    # Format numeric columns
+                    if col >= 9:  # Expression value columns
+                        if value:  # Only format non-empty cells
+                            cell.number_format = '0.0000'
+                
+                current_row += 1
+                stats["total_rows"] += 1
+        
+        if stats["total_rows"] > 0:
+            stats["studies_with_data"] += 1
+    
+    # Auto-adjust column widths
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter  # Get column letter
+        
+        for cell in col:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        
+        adjusted_width = min(max_length + 2, 50)  # Add padding, cap at 50
+        ws.column_dimensions[column].width = adjusted_width
+    
+    # Save the workbook
+    output_path = output_path.replace('.csv', '.xlsx')  # Ensure Excel extension
+    wb.save(output_path)
+    
+    _print_export_summary(stats, output_path)
+
 def main():
     """
     Main execution function.
     
     Process flow:
     1. Find all study folders in the month directory
-    2. Process each folder to extract metadata and results data
-    3. Export all data to JSON (raw) and CSV (formatted) files
+    2. Process each folder to extract metadata and results data (limited to MAX_STUDIES)
+    3. Export all data to Excel with formatting
     """
     # Find all subdirectories in the month folder (each is a study)
     study_folders = [
@@ -773,30 +974,32 @@ def main():
     if not study_folders:
         print("No studies found in the month folder.")
         return
+
+    print(f"Found {len(study_folders)} study folders")
+    print(f"Processing first {Config.MAX_STUDIES} studies (limit set in Config)")
     
-    print(f"Processing {len(study_folders)} study folders")
-    
-    # Process all studies
+    # Process limited number of studies
     all_study_data = []
-    for study_folder in study_folders:
+    for study_folder in study_folders[:Config.MAX_STUDIES]:  # Limit to MAX_STUDIES
+        print(f"\nProcessing study folder: {os.path.basename(study_folder)}")
         study_data = process_study_folder(study_folder)
         if study_data:
             all_study_data.append(study_data)
-    
+
     # Generate output files with timestamp
     timestamp = datetime.now().strftime("%Y%m%d")
     base_output_dir = os.path.dirname(Config.MONTH_FOLDER)
     month_name = os.path.basename(Config.MONTH_FOLDER).split(' ')[0]
     
-    # Export raw data to JSON
+    # Export raw data to JSON (for debugging/reference)
     json_output_path = os.path.join(base_output_dir, f"study_metadata_{month_name}_{timestamp}.json")
     with open(json_output_path, "w", encoding="utf-8") as f:
         json.dump(all_study_data, f, indent=2, ensure_ascii=False)
     print(f"\nWrote study metadata to {json_output_path}")
     
-    # Export formatted data to CSV
-    csv_output_path = os.path.join(base_output_dir, f"study_data_{month_name}_{timestamp}.csv")
-    export_to_csv(all_study_data, csv_output_path)
+    # Export formatted data to Excel
+    excel_output_path = os.path.join(base_output_dir, f"study_data_{month_name}_{timestamp}.xlsx")
+    export_to_excel(all_study_data, excel_output_path)
 
 if __name__ == "__main__":
     main()
