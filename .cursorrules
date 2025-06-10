@@ -1,0 +1,141 @@
+# Excel Study Processing and Biological Data Analysis Rules
+
+## Overview
+This project processes Excel files containing biological study data, specifically focusing on relative expression data from qPCR experiments. The system extracts metadata, classifies biological entities, and exports structured CSV data for analysis.
+
+## Core Principles
+
+### 1. Tissue vs Gene Target Classification
+- **Multi-word tissue names**: Always check for multi-word tissue names first (e.g., "adrenal gland", "sciatic nerve", "left ventricle") before splitting into individual words
+- **Hierarchical matching**: 
+  1. Check entire string against procedure tissues (exact match)
+  2. Check entire string against known tissue types (exact match)
+  3. Check for multi-word tissue phrases within the text (longest matches first)
+  4. Check individual words for tissue matches
+- **Preserve case**: When extracting tissue names from text, preserve the original case from the source
+- **Both classification**: If a cell contains both tissue words and non-tissue words, classify as 'both' and extract separately
+- **Data inclusion**: Both gene targets AND tissue targets should have their relative expression data extracted and included in output
+
+### 2. Excel Data Extraction Patterns
+- **Safe workbook operations**: Always use `data_only=True` to evaluate formulas properly, especially for trigger extraction from column B
+- **Graceful error handling**: Wrap all Excel operations in try/catch with detailed logging
+- **Column spacing**: Targets are typically spaced 4 columns apart (F, J, N, R, etc.)
+- **Empty cell tolerance**: Stop after 5 consecutive empty cells to avoid infinite loops
+- **Read-only mode**: Use read-only mode by default unless explicitly writing to files
+
+### 3. Data Structure Consistency
+- **Nested dictionaries**: Use structure `{trigger: {target/tissue: {rel_exp, low, high}}}`
+- **Separate tracking**: Maintain separate lists for gene targets and tissue targets while combining for data extraction
+- **Type preservation**: Convert numeric values to consistent 4-decimal format, handle None/empty gracefully
+- **Metadata mapping**: Create trigger-dose mappings that include dose value and detected dose type
+
+### 4. Logging and Debugging
+- **Comprehensive logging**: Use different log levels (DEBUG, INFO, WARNING, ERROR) appropriately
+- **Detailed function logging**: Log entry/exit of major functions with parameter details
+- **Data extraction logging**: Log what data was found, how many items, and any classification decisions
+- **File operations**: Log all file open/close operations with paths and modes
+- **CSV export tracking**: Log which studies are included/excluded from CSV with reasons
+
+### 5. Configuration Management
+- **Centralized config**: Keep all constants, file paths, and settings in a Config class
+- **Tissue types**: Maintain a comprehensive set of known tissue types including abbreviations
+- **Flexible sheet names**: Support multiple variations of sheet names (with/without periods, etc.)
+- **Cell locations**: Use named constants for specific Excel cell locations rather than magic numbers
+
+### 6. CSV Export Standards
+- **Column order**: study_name, study_code, screening_model, gene_target, item_type, trigger, dose, dose_type, timepoint, tissue, avg_rel_exp, avg_rel_exp_lsd, avg_rel_exp_hsd
+- **Item type classification**: Explicitly mark each row as "gene_target" or "tissue_target"
+- **Sorting logic**: Sort by tissue, then item type, then target name
+- **Study code formatting**: Quote study codes to prevent Excel interpretation issues
+- **Numeric formatting**: Use consistent 4-decimal places for all numeric values
+
+### 7. String Processing and Matching
+- **Normalization**: Remove spaces, special characters, convert to lowercase for matching
+- **Fuzzy matching**: Support exact match, prefix match, and normalized match strategies
+- **Dose extraction**: Extract dose information from trigger names using regex patterns (mpk, mg/kg, ug, etc.)
+- **Dose type detection**: Identify SQ, IV, IM, Intratracheal from text
+- **Timepoint formatting**: Ensure timepoints start with 'D' prefix
+
+### 8. Error Handling and Validation
+- **Graceful degradation**: Continue processing other studies if one fails
+- **Fallback metadata**: Extract minimal data when primary sources are unavailable
+- **Data validation**: Check for empty/zero values consistently across all functions
+- **Safety limits**: Use MAX_TARGETS and MAX_TRIGGERS to prevent infinite loops
+- **File existence checks**: Verify files exist before attempting to process
+
+### 9. Biological Data Specifics
+- **Known tissue types**: Maintain comprehensive list including:
+  - Basic organs: lung, liver, heart, kidney, brain, etc.
+  - Specific regions: hippocampus, striatum, cortex, cerebellum
+  - Multi-word: "adrenal gland", "sciatic nerve", "spinal cord" variations
+  - Abbreviations: gastroc, tri, gst, hrt, iWAT
+- **Study metadata**: Extract study name, code, screening model, tissues, triggers, doses, timepoint
+- **Expression data**: Handle relative expression values with confidence intervals (low/high)
+- **Trigger matching**: Match triggers between metadata and results sheets using fuzzy matching
+
+### 10. Code Organization Patterns
+- **Utility functions**: Create reusable functions for common operations (normalization, validation, etc.)
+- **Class-based extractors**: Use static methods in utility classes for related functionality
+- **Single responsibility**: Each function should have one clear purpose
+- **Type hints**: Use proper type hints for all function parameters and return values
+- **Docstring standards**: Include detailed docstrings with Args and Returns sections
+
+## Implementation Guidelines
+
+### When processing Excel files:
+```python
+# Always use this pattern for safe Excel operations
+def safe_workbook_operation(file_path: str, operation_func, *args, **kwargs):
+    try:
+        wb = load_workbook(file_path, data_only=True, read_only=True)
+        result = operation_func(wb, *args)
+        wb.close()
+        return result
+    except Exception as e:
+        # Log error and continue processing
+        logger.error(f"Error processing {file_path}: {e}")
+        return None
+```
+
+### When classifying biological entities:
+```python
+# Check multi-word tissues first, then individual words
+def classify_target_or_tissue(text: str, procedure_tissues: List[str]):
+    # 1. Check entire string exact matches
+    # 2. Check multi-word tissue patterns (longest first)
+    # 3. Check individual words
+    # 4. Return 'tissue', 'target', or 'both' with extracted components
+```
+
+### When extracting data:
+```python
+# Always extract data for both gene targets and tissue targets
+all_data_names = targets + tissue_names_for_data
+all_data_columns = target_columns + tissue_columns_for_data
+# Process all items for relative expression data
+```
+
+### When exporting CSV:
+```python
+# Include item_type to distinguish gene targets from tissue targets
+header = ["study_name", "study_code", "screening_model", "gene_target", 
+          "item_type", "trigger", "dose", "dose_type", "timepoint", 
+          "tissue", "avg_rel_exp", "avg_rel_exp_lsd", "avg_rel_exp_hsd"]
+```
+
+## Key Design Decisions
+1. **Tissues are data sources**: Tissues can have relative expression data extracted, they're not just metadata
+2. **Preserve both classifications**: Track items as both their biological type (tissue/target) AND extract their data
+3. **Comprehensive logging**: Every major operation should be logged for debugging and audit trails
+4. **Flexible matching**: Support various naming conventions and typos in biological data
+5. **Fail-safe processing**: One bad file shouldn't stop processing of other studies
+6. **Structured output**: CSV format with clear type classification for downstream analysis
+
+## Common Pitfalls to Avoid
+- Don't skip data extraction for items classified as tissues
+- Don't assume single-word tissue names only
+- Don't use magic numbers for Excel cell locations
+- Don't ignore formula evaluation (always use data_only=True)
+- Don't process files without proper error handling
+- Don't create CSV rows without proper type classification
+- Don't forget to close Excel workbooks after processing 

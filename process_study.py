@@ -5,18 +5,64 @@ import json
 import csv
 from datetime import datetime
 import traceback
+import logging
 from typing import Dict, List, Optional, Tuple, Any
 from openpyxl import load_workbook
+
+# ========================== LOGGING SETUP ==========================
+def setup_logging(log_file_path: str) -> logging.Logger:
+    """
+    Set up comprehensive logging for the study processing script.
+    Creates both file and console handlers with detailed formatting.
+    """
+    # Create logger
+    logger = logging.getLogger('StudyProcessor')
+    logger.setLevel(logging.DEBUG)
+    
+    # Clear any existing handlers
+    logger.handlers.clear()
+    
+    # Create formatters
+    detailed_formatter = logging.Formatter(
+        '%(asctime)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    
+    console_formatter = logging.Formatter(
+        '%(levelname)s - %(message)s'
+    )
+    
+    # File handler - logs everything
+    file_handler = logging.FileHandler(log_file_path, mode='w', encoding='utf-8')
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(detailed_formatter)
+    logger.addHandler(file_handler)
+    
+    # Console handler - logs INFO and above
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+    
+    return logger
+
+# Global logger instance
+logger = None
+
+def init_logger(log_file_path: str):
+    """Initialize the global logger instance."""
+    global logger
+    logger = setup_logging(log_file_path)
 
 class Config:
     """
     Central configuration class containing all constants and settings.
     This makes it easy to modify paths, cell locations, and parameters without 
     hunting through the entire codebase.
-    """
+        """
     # Main folder containing all study subfolders to process
     MONTH_FOLDER = r"C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024"
-    DEBUG = False  # Set to True to see detailed debug output during processing
+    DEBUG = True  # Set to True to see detailed debug output during processing
     
     # Excel sheet names we're looking for in the workbooks
     PROCEDURE_SHEET = "Procedure Request Form"  # Contains study metadata
@@ -60,7 +106,10 @@ class Config:
         'frontal cortex', 'motor cortex', 'brainstem', 'midbrain', 'spinal cord',
         'thoracic spinal cord', 'lumbar spinal cord', 'cervical spinal cord',
         'skeletal muscle', 'cardiac muscle', 'diaphragm', 'quadriceps',
-        'gastrocnemius', 'tibialis anterior', 'retina', 'optic nerve'
+        'gastrocnemius', 'tibialis anterior', 'retina', 'optic nerve','adrenal gland',
+        'sciatic nerve','striatum','lymph node','diaphragm', 'kidney cortex','gastroc','triceps',
+        'apex','left ventricle','right ventricle','left atrium','right atrium','medial lobe', 'aorta',
+        'rlung','llung','macrophage','tri','gast','gst','hrt','iWAT'
     }
 
 # ========================== UTILITY FUNCTIONS ==========================
@@ -72,6 +121,10 @@ def debug_print(*args, **kwargs):
     """
     if Config.DEBUG:
         print(*args, **kwargs)
+    # Also log to file if logger is available
+    if logger:
+        message = ' '.join(str(arg) for arg in args)
+        logger.debug(message)
 
 def is_empty_or_zero(value: Any) -> bool:
     """
@@ -124,6 +177,53 @@ def convert_to_numeric(value: Any) -> str:
     except (ValueError, TypeError):
         return str(value).strip()
 
+def extract_dose_from_trigger_name(trigger_name: str) -> Optional[str]:
+    """
+    Extract dose value from trigger name, specifically looking for mpk values.
+    
+    Args:
+        trigger_name: The trigger name to search for dose information
+        
+    Returns:
+        Extracted dose value or None if not found
+    """
+    if not trigger_name:
+        return None
+    
+    text = str(trigger_name).lower().strip()
+    
+    # Look for mpk patterns (e.g., "5mpk", "10 mpk", "2.5mpk")
+    mpk_patterns = [
+        r'(\d+(?:\.\d+)?)\s*mpk',  # Matches "5mpk", "10 mpk", "2.5mpk"
+        r'(\d+(?:\.\d+)?)\s*mg/kg',  # Matches "5mg/kg", "10 mg/kg"
+    ]
+    
+    for pattern in mpk_patterns:
+        match = re.search(pattern, text)
+        if match:
+            dose_value = match.group(1)
+            if logger:
+                logger.debug(f"Extracted dose '{dose_value} mpk' from trigger name: '{trigger_name}'")
+            return f"{dose_value} mpk"
+    
+    # Look for other dose patterns (ug, mg, etc.)
+    dose_patterns = [
+        r'(\d+(?:\.\d+)?)\s*(ug|μg|mg|g)\b',  # Matches "250ug", "5mg", etc.
+        r'(\d+(?:\.\d+)?)\s*(ul|μl|ml|l)\b',  # Matches "250ul", "5ml", etc.
+    ]
+    
+    for pattern in dose_patterns:
+        match = re.search(pattern, text)
+        if match:
+            dose_value = match.group(1)
+            dose_unit = match.group(2)
+            extracted_dose = f"{dose_value} {dose_unit}"
+            if logger:
+                logger.debug(f"Extracted dose '{extracted_dose}' from trigger name: '{trigger_name}'")
+            return extracted_dose
+    
+    return None
+
 def detect_dose_type(text: str) -> Optional[str]:
     """
     Detect dose type (SQ, IV, IM, intratracheal) from text.
@@ -169,19 +269,108 @@ def is_tissue_name(text: str) -> bool:
 def classify_target_or_tissue(text: str, procedure_tissues: List[str]) -> Tuple[str, Optional[str], Optional[str]]:
     """
     Classify a text string as either a tissue or gene target.
-    Only classifies as tissue on exact match to procedure tissues or known tissue types.
+    Now also checks if individual words within the text are tissue names.
+    If tissue words are found, they are extracted and the remaining words form the gene target.
     """
     if not text:
         return 'target', None, None
     text_clean = str(text).strip()
-    # Only exact match to procedure tissues
+    
+    # First check if the entire string is a tissue (exact match to procedure tissues)
     for proc_tissue in procedure_tissues:
         if normalize_string(text_clean) == normalize_string(proc_tissue):
             return 'tissue', text_clean, None
-    # Only exact match to known tissue types
+    
+    # Check if the entire string is a known tissue type
     if is_tissue_name(text_clean):
         return 'tissue', text_clean, None
+    
+    # NEW: Check if any words or phrases in the text are tissue names
+    words = text_clean.split()
+    if len(words) > 1:  # Only check multi-word strings
+        tissue_words = []
+        remaining_words = words.copy()
+        
+        # Debug output
+        if Config.DEBUG:
+            print(f"    Analyzing multi-word text: '{text_clean}' -> words: {words}")
+        
+        # First, check for multi-word tissue names (longest matches first)
+        # Sort tissue types by length (descending) to match longer phrases first
+        all_tissue_types = list(Config.TISSUE_TYPES) + procedure_tissues
+        sorted_tissues = sorted(all_tissue_types, key=len, reverse=True)
+        
+        for tissue_type in sorted_tissues:
+            tissue_words_list = tissue_type.lower().split()
+            if len(tissue_words_list) > 1:  # Multi-word tissue
+                # Check if this multi-word tissue appears as a consecutive phrase in our text
+                text_lower = ' '.join([w.lower() for w in remaining_words])
+                if tissue_type.lower() in text_lower:
+                    # Find the start position of this tissue phrase
+                    remaining_words_lower = [w.lower() for w in remaining_words]
+                    try:
+                        # Look for the tissue phrase as consecutive words
+                        for start_idx in range(len(remaining_words) - len(tissue_words_list) + 1):
+                            if remaining_words_lower[start_idx:start_idx + len(tissue_words_list)] == tissue_words_list:
+                                # Found the tissue phrase - extract with original case
+                                found_tissue_words = remaining_words[start_idx:start_idx + len(tissue_words_list)]
+                                tissue_words.extend(found_tissue_words)
+                                
+                                if Config.DEBUG:
+                                    print(f"    Found multi-word tissue: '{' '.join(found_tissue_words)}' from '{tissue_type}'")
+                                
+                                # Remove these words from remaining_words
+                                remaining_words = (remaining_words[:start_idx] + 
+                                                 remaining_words[start_idx + len(tissue_words_list):])
+                                break
+                    except (IndexError, ValueError):
+                        continue
+        
+        # Then check individual words that weren't part of multi-word tissues
+        additional_tissue_words = []
+        final_remaining_words = []
+        
+        for word in remaining_words:
+            word_clean = word.strip()
+            # Check if this individual word is a tissue
+            if is_tissue_name(word_clean):
+                additional_tissue_words.append(word_clean)
+                if Config.DEBUG:
+                    print(f"    Found individual tissue word: '{word_clean}'")
+            else:
+                # Also check against procedure tissues
+                is_proc_tissue = False
+                for proc_tissue in procedure_tissues:
+                    if normalize_string(word_clean) == normalize_string(proc_tissue):
+                        additional_tissue_words.append(word_clean)
+                        is_proc_tissue = True
+                        if Config.DEBUG:
+                            print(f"    Found procedure tissue word: '{word_clean}'")
+                        break
+                if not is_proc_tissue:
+                    final_remaining_words.append(word_clean)
+        
+        # Combine all tissue words
+        all_tissue_words = tissue_words + additional_tissue_words
+        
+        # If we found tissue words, extract them
+        if all_tissue_words:
+            tissue_name = ' '.join(all_tissue_words)
+            if final_remaining_words:
+                # Return both tissue and remaining target
+                target_name = ' '.join(final_remaining_words)
+                if Config.DEBUG:
+                    print(f"    Result: BOTH - tissue: '{tissue_name}', target: '{target_name}'")
+                return 'both', tissue_name, target_name
+            else:
+                # All words were tissues
+                if Config.DEBUG:
+                    print(f"    Result: TISSUE - '{tissue_name}'")
+                return 'tissue', tissue_name, None
+    
     # Otherwise, treat as gene target
+    if Config.DEBUG:
+        print(f"    Result: TARGET - '{text_clean}'")
     return 'target', None, text_clean
 
 
@@ -189,16 +378,32 @@ def safe_workbook_operation(file_path: str, operation_func, *args, **kwargs):
     """
     Safely open Excel workbooks and ensure they're properly closed.
     Always uses read_only mode unless explicitly disabled.
+    ALWAYS uses data_only=True to evaluate formulas properly.
     """
     try:
         # Default to read_only=True unless explicitly set to False
         read_only = kwargs.pop('read_only', True)
+        
+        # Always use data_only=True to evaluate formulas
+        # This is critical for trigger extraction since column B contains formulas
+        if logger:
+            logger.debug(f"Opening workbook: {file_path} (read_only={read_only}, data_only=True)")
+        
         wb = load_workbook(file_path, data_only=True, read_only=read_only)
         result = operation_func(wb, *args)
         wb.close()
+        
+        if logger:
+            logger.debug(f"Successfully processed workbook: {file_path}")
+        
         return result
+                
     except Exception as e:
-        print(f"Error processing {file_path}: {e}")
+        error_msg = f"Error processing {file_path}: {e}"
+        print(error_msg)
+        if logger:
+            logger.error(error_msg)
+            logger.error(f"Full traceback: {traceback.format_exc()}")
         if Config.DEBUG:
             traceback.print_exc()
         return None
@@ -230,7 +435,11 @@ class ExcelExtractor:
         empty_count = 0
         
         while row <= ws.max_row:
-            cell_value = ws[f"{column}{row}"].value
+            # Get cell and handle potential Excel formula issues
+            cell = ws[f"{column}{row}"]
+            cell_value = cell.value
+            
+            # Cell value should be properly evaluated with data_only=True
             
             if is_empty_or_zero(cell_value):
                 empty_count += 1
@@ -266,6 +475,7 @@ class ExcelExtractor:
             val1 = ws[f"{col1}{row}"].value
             if is_empty_or_zero(val1):
                 break
+                
             val2 = ws[f"{col2}{row}"].value
             values1.append(str(val1).strip())
             values2.append(val2 if val2 is not None else None)
@@ -294,10 +504,10 @@ class ExcelExtractor:
         return None
 
     @staticmethod
-    def extract_targets_from_row(ws, row: int, procedure_tissues: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
+    def extract_targets_from_row(ws, row: int, procedure_tissues: List[str] = None) -> Tuple[List[str], List[int], List[str], List[str], List[int]]:
         """
-        Extract target gene names and their column positions from a specific row.
-        Also identifies any tissues found in the target row.
+        Extract target gene names and tissue names with their column positions from a specific row.
+        Now tracks both targets and tissues for data extraction.
         Targets are typically spaced every 4 columns (F, J, N, R, etc.).
         
         Args:
@@ -306,12 +516,13 @@ class ExcelExtractor:
             procedure_tissues: List of tissues from Procedure Request Form for comparison
             
         Returns:
-            Tuple of (target_names, column_numbers, found_tissues)
+            Tuple of (target_names, target_columns, found_tissues, tissue_names_for_data, tissue_columns_for_data)
         """
         if procedure_tissues is None:
             procedure_tissues = []
             
         targets, target_columns, found_tissues = [], [], []
+        tissue_names_for_data, tissue_columns_for_data = [], []  # NEW: Track tissues for data extraction
         col_start = Config.TARGET_START_COLUMN  # Start at column F (6)
         zero_count = 0
         
@@ -331,15 +542,33 @@ class ExcelExtractor:
                     text_clean, procedure_tissues
                 )
                 print(f"Target row cell '{text_clean}': classified as {classification}")
+                if logger:
+                    logger.debug(f"Target row cell '{text_clean}': classified as {classification}")
+                
                 if classification == 'tissue':
                     found_tissues.append(tissue_name)
+                    # NEW: Also add to data extraction lists
+                    tissue_names_for_data.append(tissue_name)
+                    tissue_columns_for_data.append(col_start)
+                    if logger:
+                        logger.debug(f"  Added to tissues: '{tissue_name}' (will extract data)")
+                elif classification == 'both':
+                    # Handle case where cell contains both tissue and target words
+                    found_tissues.append(tissue_name)
+                    targets.append(target_name)
+                    target_columns.append(col_start)
+                    print(f"  Extracted tissue: '{tissue_name}', remaining target: '{target_name}'")
+                    if logger:
+                        logger.info(f"  Split cell '{text_clean}' -> tissue: '{tissue_name}', target: '{target_name}'")
                 else:
                     targets.append(target_name)
                     target_columns.append(col_start)
+                    if logger:
+                        logger.debug(f"  Added to targets: '{target_name}'")
             
             col_start += Config.TARGET_COLUMN_SPACING  # Move to next target column
         
-        return targets, target_columns, found_tissues
+        return targets, target_columns, found_tissues, tissue_names_for_data, tissue_columns_for_data
 
 # ========================== STUDY METADATA EXTRACTION ==========================
 def extract_study_metadata(wb, folder_name: str) -> Dict[str, Any]:
@@ -354,7 +583,13 @@ def extract_study_metadata(wb, folder_name: str) -> Dict[str, Any]:
     Returns:
         Dictionary containing all extracted metadata
     """
+    if logger:
+        logger.info(f"Extracting metadata for study: {folder_name}")
+        logger.debug(f"Available sheets: {wb.sheetnames}")
+    
     if Config.PROCEDURE_SHEET not in wb.sheetnames:
+        if logger:
+            logger.warning(f"'{Config.PROCEDURE_SHEET}' sheet not found in {folder_name}, using fallback metadata")
         return _extract_fallback_metadata(folder_name)
     
     ws = wb[Config.PROCEDURE_SHEET]
@@ -369,6 +604,16 @@ def extract_study_metadata(wb, folder_name: str) -> Dict[str, Any]:
     triggers, doses = ExcelExtractor.extract_paired_columns(
         ws, Config.TRIGGERS_START_ROW, Config.TRIGGERS_COLUMN, Config.DOSES_COLUMN
     )
+    
+    # Debug: Print extracted triggers
+    print(f"Extracted {len(triggers)} triggers from metadata:")
+    if logger:
+        logger.info(f"Extracted {len(triggers)} triggers from metadata for {folder_name}")
+    for i, trigger in enumerate(triggers):
+        dose = doses[i] if i < len(doses) else None
+        print(f"  {i+1}: '{trigger}' -> dose: {dose}")
+        if logger:
+            logger.debug(f"  Trigger {i+1}: '{trigger}' -> dose: {dose}")
     
     # Create mapping between triggers and their corresponding doses
     trigger_dose_map = _create_trigger_dose_map(triggers, doses)
@@ -439,7 +684,7 @@ def _create_trigger_dose_map(triggers: List[str], doses: List[Any]) -> Dict[str,
     """
     Create a dictionary mapping each trigger to its corresponding dose and detected dose type.
     Ensures both lists are the same length by padding doses with None.
-    Now also detects dose types (SQ, IV, IM, intratracheal).
+    Now also detects dose types (SQ, IV, IM, intratracheal) and extracts doses from trigger names.
     
     Returns:
         Dictionary mapping trigger -> {"dose": dose_value, "dose_type": detected_type}
@@ -453,13 +698,25 @@ def _create_trigger_dose_map(triggers: List[str], doses: List[Any]) -> Dict[str,
         dose_str = str(dose) if dose is not None else ""
         detected_dose_type = detect_dose_type(dose_str)
         
+        # If no dose from metadata, try to extract from trigger name
+        final_dose = dose
+        if not dose or dose_str.strip() == "" or dose_str.lower() == "none":
+            extracted_dose = extract_dose_from_trigger_name(trigger)
+            if extracted_dose:
+                final_dose = extracted_dose
+                if logger:
+                    logger.info(f"No metadata dose for trigger '{trigger}', using extracted dose: '{extracted_dose}'")
+        
         trigger_dose_map[str(trigger)] = {
-            "dose": dose,
+            "dose": final_dose,
             "dose_type": detected_dose_type
         }
         
         if detected_dose_type:
             debug_print(f"Detected dose type '{detected_dose_type}' for trigger '{trigger}': {dose_str}")
+        
+        if logger:
+            logger.debug(f"Trigger dose mapping: '{trigger}' -> dose: '{final_dose}', type: '{detected_dose_type}'")
     
     return trigger_dose_map
 
@@ -632,13 +889,21 @@ def extract_relative_expression_data(wb, procedure_tissues: List[str] = None) ->
     """
     if procedure_tissues is None:
         procedure_tissues = []
+    
+    if logger:
+        logger.info("Extracting relative expression data")
+        logger.debug(f"Available sheets: {wb.sheetnames}")
         
     sheet_name = _find_relative_expression_sheet(wb)
     if not sheet_name:
+        if logger:
+            logger.warning("No relative expression sheet found")
         return None
     
     ws = wb[sheet_name]
     print(f"Using sheet: '{sheet_name}'")
+    if logger:
+        logger.info(f"Using sheet: '{sheet_name}' for relative expression data")
     
     # Find the "Relative Expression by Groups" section header
     rel_exp_location = ExcelExtractor.find_cell_with_text(
@@ -650,14 +915,18 @@ def extract_relative_expression_data(wb, procedure_tissues: List[str] = None) ->
     
     rel_exp_row, _ = rel_exp_location
     
-    # Extract target gene names (usually 2 rows below the header)
+    # Extract target gene names and tissue names (usually 2 rows below the header)
     target_row = rel_exp_row + 2
-    targets, target_columns, found_tissues = ExcelExtractor.extract_targets_from_row(
+    targets, target_columns, found_tissues, tissue_names_for_data, tissue_columns_for_data = ExcelExtractor.extract_targets_from_row(
         ws, target_row, procedure_tissues
     )
     
-    if not targets:
-        print(f"No targets found in row {target_row}")
+    # Combine targets and tissues for data extraction
+    all_data_names = targets + tissue_names_for_data
+    all_data_columns = target_columns + tissue_columns_for_data
+    
+    if not all_data_names:
+        print(f"No targets or tissues found for data extraction in row {target_row}")
         return None
     
     # Extract trigger names (usually 3 rows below the header, in column B)
@@ -667,20 +936,34 @@ def extract_relative_expression_data(wb, procedure_tissues: List[str] = None) ->
     )[:Config.MAX_TRIGGERS]
     
     print(f"Found targets: {targets}")
-    print(f"Found triggers: {triggers}")
+    print(f"Found tissues for data extraction: {tissue_names_for_data}")
+    print(f"Found {len(triggers)} triggers in relative expression data:")
+    if logger:
+        logger.info(f"Found {len(targets)} gene targets, {len(tissue_names_for_data)} tissue targets, and {len(triggers)} triggers in relative expression data")
+        logger.debug(f"Gene targets: {targets}")
+        logger.debug(f"Tissue targets: {tissue_names_for_data}")
+    for i, trigger in enumerate(triggers):
+        print(f"  {i+1}: '{trigger}'")
+        if logger:
+            logger.debug(f"  Trigger {i+1}: '{trigger}'")
+    
     if found_tissues:
         print(f"Found tissues in target row: {found_tissues}")
+        if logger:
+            logger.info(f"Found tissues in target row: {found_tissues}")
     
-    # Extract the actual expression data for each trigger-target combination
-    triggers_data = _extract_trigger_target_data(ws, triggers, targets, target_columns, trigger_start_row)
+    # Extract the actual expression data for each trigger-target combination (including tissues)
+    triggers_data = _extract_trigger_target_data(ws, triggers, all_data_names, all_data_columns, trigger_start_row)
     
     # Remove triggers with no data
     clean_triggers_data = {k: v for k, v in triggers_data.items() if v}
     
     return {
         "targets": targets,
+        "tissue_targets": tissue_names_for_data,  # NEW: Tissues that have expression data
         "relative_expression_data": clean_triggers_data,
-        "found_tissues": found_tissues
+        "found_tissues": found_tissues,
+        "all_data_items": all_data_names  # NEW: Combined list of all items with data
     }
 
 def _find_relative_expression_sheet(wb) -> Optional[str]:
@@ -817,21 +1100,45 @@ def process_study_folder(study_folder: str) -> Optional[Dict[str, Any]]:
     results_folder = os.path.join(study_folder, "Results")
 
     print(f"\nProcessing study: {folder_name}")
+    if logger:
+        logger.info(f"Starting processing of study: {folder_name}")
+        logger.debug(f"Study folder path: {study_folder}")
+        logger.debug(f"Expected info file: {info_file}")
+        logger.debug(f"Expected results folder: {results_folder}")
+    
     study_data = {}
 
     # Extract metadata from the main study file
     if os.path.exists(info_file):
+        if logger:
+            logger.debug(f"Found info file: {info_file}")
         metadata = safe_workbook_operation(info_file, extract_study_metadata, folder_name)
         if metadata:
             study_data.update(metadata)
             print("Extracted metadata fields:")
+            if logger:
+                logger.info(f"Successfully extracted metadata for {folder_name}")
             for k, v in metadata.items():
                 print(f"  {k}: {v}")
+                if logger:
+                    logger.debug(f"  Metadata {k}: {v}")
+        else:
+            if logger:
+                logger.error(f"Failed to extract metadata from {info_file}")
     else:
         print(f"Info file not found: {info_file}")
+        if logger:
+            logger.warning(f"Info file not found: {info_file}")
     
     # Extract data from the results file
     results_file = _find_results_file(results_folder)
+    if results_file:
+        if logger:
+            logger.debug(f"Found results file: {results_file}")
+    else:
+        if logger:
+            logger.warning(f"No results file found in {results_folder}")
+    
     if results_file:
         # Extract LAR sheet data (additional metadata)
         lar_data = _extract_lar_data(results_file)
@@ -918,24 +1225,62 @@ def export_to_csv(all_study_data: List[Dict[str, Any]], output_path: str):
     - study_name, study_code, screening_model, gene_target, trigger, dose, dose_type,
       timepoint, tissue, avg_rel_exp, avg_rel_exp_lsd, avg_rel_exp_hsd
     """
+    if logger:
+        logger.info(f"Starting CSV export to: {output_path}")
+        logger.info(f"Processing {len(all_study_data)} studies for CSV export")
+    
     header = [
-        "study_name", "study_code", "screening_model", "gene_target", "trigger", 
+        "study_name", "study_code", "screening_model", "gene_target", "item_type", "trigger", 
         "dose", "dose_type", "timepoint", "tissue", "avg_rel_exp", "avg_rel_exp_lsd", "avg_rel_exp_hsd"
     ]
     
     csv_rows = [header]
-    stats = {"studies_processed": 0, "studies_with_data": 0, "total_rows": 0}
+    stats = {
+        "studies_processed": 0, 
+        "studies_with_data": 0, 
+        "studies_excluded": 0,
+        "total_rows": 0,
+        "excluded_studies": []
+    }
     
     for study in all_study_data:
         stats["studies_processed"] += 1
+        study_name = study.get('study_name', 'Unknown')
+        study_code = study.get('study_code', 'Unknown')
+        
+        if logger:
+            logger.debug(f"Processing study for CSV: {study_name} ({study_code})")
+        
         rows_added = _process_study_for_csv(study, csv_rows)
         if rows_added > 0:
             stats["studies_with_data"] += 1
             stats["total_rows"] += rows_added
+        else:
+            stats["studies_excluded"] += 1
+            stats["excluded_studies"].append({
+                "name": study_name,
+                "code": study_code,
+                "reason": "No valid data rows generated"
+            })
     
     # Write CSV file
     with open(output_path, 'w', newline='', encoding='utf-8') as csvfile:
         csv.writer(csvfile).writerows(csv_rows)
+    
+    if logger:
+        logger.info(f"CSV file written successfully: {output_path}")
+        logger.info("="*60)
+        logger.info("CSV EXPORT SUMMARY")
+        logger.info("="*60)
+        logger.info(f"Studies processed for CSV: {stats['studies_processed']}")
+        logger.info(f"Studies included in CSV: {stats['studies_with_data']}")
+        logger.info(f"Studies excluded from CSV: {stats['studies_excluded']}")
+        logger.info(f"Total data rows in CSV: {stats['total_rows']}")
+        
+        if stats["excluded_studies"]:
+            logger.warning("STUDIES EXCLUDED FROM CSV:")
+            for excluded in stats["excluded_studies"]:
+                logger.warning(f"  - {excluded['name']} ({excluded['code']}): {excluded['reason']}")
     
     _print_export_summary(stats, output_path)
 
@@ -945,50 +1290,107 @@ def _process_study_for_csv(study: Dict[str, Any], csv_rows: List[List[str]]) -> 
     Groups all rows for a study by tissue (primary) and then by target (secondary).
     If tissue is missing, groups by target.
     """
+    study_name = study.get('study_name', 'Unknown')
+    study_code = study.get('study_code', 'Unknown')
+    
     if "relative_expression" not in study:
-        print(f"Skipping study with no relative expression data: {study.get('study_name')}")
+        exclusion_reason = "No relative expression data found"
+        print(f"Skipping study with no relative expression data: {study_name}")
+        if logger:
+            logger.warning(f"EXCLUDED FROM CSV: {study_name} ({study_code}) - {exclusion_reason}")
         return 0
 
-    print(f"\nProcessing CSV data for study: {study.get('study_name')}")
+    print(f"\nProcessing CSV data for study: {study_name}")
+    if logger:
+        logger.info(f"Processing CSV data for study: {study_name} ({study_code})")
+    
     study_info = _extract_study_info_for_csv(study)
     print(f"  Study info: {study_info}")
+    if logger:
+        logger.debug(f"Study info for CSV: {study_info}")
 
     rel_exp_data = study["relative_expression"].get("relative_expression_data", {})
     if not rel_exp_data:
+        exclusion_reason = "Relative expression data structure is empty"
         print(f"  No relative expression data found in study")
+        if logger:
+            logger.warning(f"EXCLUDED FROM CSV: {study_name} ({study_code}) - {exclusion_reason}")
         return 0
 
     print(f"  Found {len(rel_exp_data)} triggers in relative expression data")
     print(f"  Trigger names in relative expression: {list(rel_exp_data.keys())}")
     print(f"  Trigger names in metadata: {list(study_info['trigger_dose_map'].keys())}")
+    
+    if logger:
+        logger.debug(f"Found {len(rel_exp_data)} triggers in relative expression data")
+        logger.debug(f"Trigger names in relative expression: {list(rel_exp_data.keys())}")
+        logger.debug(f"Trigger names in metadata: {list(study_info['trigger_dose_map'].keys())}")
 
-    # Collect all rows for this study
+        # Collect all rows for this study
     study_rows = []
+    
+    # Get lists of gene targets and tissue targets for proper classification
+    gene_targets = study.get("relative_expression", {}).get("targets", [])
+    tissue_targets = study.get("relative_expression", {}).get("tissue_targets", [])
+    
     for trigger in rel_exp_data.keys():
-        trigger_info = study_info["trigger_dose_map"].get(trigger, {"dose": "", "dose_type": ""})
-        trigger_data = rel_exp_data[trigger]
-        for target, value in trigger_data.items():
-            if isinstance(value, dict):
-                row = _create_csv_row(
-                    study_info, trigger, trigger_info, target,
-                    {"rel_exp": value.get("rel_exp"), "low": value.get("low"), "high": value.get("high")}
-                )
-            else:
-                row = _create_csv_row(
-                    study_info, trigger, trigger_info, target,
-                    {"rel_exp": value, "low": None, "high": None}
-                )
-            study_rows.append(row)
+            # Get dose info from metadata mapping
+            trigger_info = study_info["trigger_dose_map"].get(trigger, {"dose": "", "dose_type": ""})
+            
+            # Try to extract dose from trigger name if not available in mapping
+            extracted_dose = extract_dose_from_trigger_name(trigger)
+            if extracted_dose and not trigger_info.get("dose"):
+                trigger_info = {
+                    "dose": extracted_dose,
+                    "dose_type": trigger_info.get("dose_type", "")
+                }
+                if logger:
+                    logger.info(f"Using extracted dose '{extracted_dose}' for trigger '{trigger}'")
+            elif trigger_info.get("dose") and extracted_dose:
+                # Both sources available - log for comparison
+                if logger:
+                    logger.debug(f"Trigger '{trigger}': metadata dose='{trigger_info.get('dose')}', extracted dose='{extracted_dose}'")
+            
+            trigger_data = rel_exp_data[trigger]
+            
+            if logger:
+                logger.debug(f"Processing trigger '{trigger}' with {len(trigger_data)} items, final dose: '{trigger_info.get('dose', 'None')}'")
+            
+            for item_name, value in trigger_data.items():
+                # Determine if this item is a gene target or tissue target
+                if item_name in gene_targets:
+                    item_type = "gene_target"
+                elif item_name in tissue_targets:
+                    item_type = "tissue_target"
+                else:
+                    item_type = "unknown"  # Fallback
+                
+                if isinstance(value, dict):
+                    row = _create_csv_row(
+                        study_info, trigger, trigger_info, item_name, item_type,
+                        {"rel_exp": value.get("rel_exp"), "low": value.get("low"), "high": value.get("high")}
+                    )
+                else:
+                    row = _create_csv_row(
+                        study_info, trigger, trigger_info, item_name, item_type,
+                        {"rel_exp": value, "low": None, "high": None}
+                    )
+                study_rows.append(row)
+                
+                if logger:
+                    logger.debug(f"Added CSV row: {trigger} -> {item_name} ({item_type}) = {value}, dose = {trigger_info.get('dose', 'None')}")
 
     # Determine index for tissue and target columns in the row
-    tissue_idx = 8  # 0-based index for 'tissue' in the row
+    tissue_idx = 9  # 0-based index for 'tissue' in the row (shifted due to new item_type column)
     target_idx = 3  # 0-based index for 'gene_target' in the row
+    item_type_idx = 4  # 0-based index for 'item_type' in the row
 
-    # Sort rows: by tissue (if present), then by target
+    # Sort rows: by tissue (if present), then by item type, then by target
     def sort_key(row):
         tissue = row[tissue_idx] or "ZZZ"  # Put missing tissues at the end
+        item_type = row[item_type_idx] or "ZZZ"
         target = row[target_idx] or "ZZZ"
-        return (tissue, target)
+        return (tissue, item_type, target)
 
     study_rows.sort(key=sort_key)
 
@@ -996,7 +1398,9 @@ def _process_study_for_csv(study: Dict[str, Any], csv_rows: List[List[str]]) -> 
     for row in study_rows:
         csv_rows.append(row)
 
-    print(f"  Added {len(study_rows)} rows to CSV for study {study.get('study_name')}")
+    print(f"  Added {len(study_rows)} rows to CSV for study {study_name}")
+    if logger:
+        logger.info(f"INCLUDED IN CSV: {study_name} ({study_code}) - Added {len(study_rows)} rows")
     return len(study_rows)
 
 def _extract_study_info_for_csv(study: Dict[str, Any]) -> Dict[str, Any]:
@@ -1028,7 +1432,7 @@ def _extract_study_info_for_csv(study: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 def _create_csv_row(study_info: Dict[str, Any], trigger: str, trigger_info: Dict[str, Any], 
-                   target: str, values: Dict[str, Any]) -> List[str]:
+                   target: str, item_type: str, values: Dict[str, Any]) -> List[str]:
     """
     Create a single CSV row for one trigger-target combination.
     
@@ -1036,15 +1440,16 @@ def _create_csv_row(study_info: Dict[str, Any], trigger: str, trigger_info: Dict
     1. study_name: Name of the study
     2. study_code: 10-digit code (quoted to prevent Excel issues)
     3. screening_model: Type of screening used
-    4. gene_target: Name of the target gene
-    5. trigger: Name of the trigger (e.g., siRNA sequence)
-    6. dose: Dose amount for this trigger
-    7. dose_type: Detected dose type (SQ, IV, IM, Intratracheal)
-    8. timepoint: Time point of measurement (e.g., D14)
-    9. tissue: Tissue type tested
-    10. avg_rel_exp: Average relative expression value
-    11. avg_rel_exp_lsd: Lower standard deviation
-    12. avg_rel_exp_hsd: Higher standard deviation
+    4. gene_target: Name of the target gene or tissue
+    5. item_type: Type of item (gene_target or tissue_target)
+    6. trigger: Name of the trigger (e.g., siRNA sequence)
+    7. dose: Dose amount for this trigger
+    8. dose_type: Detected dose type (SQ, IV, IM, Intratracheal)
+    9. timepoint: Time point of measurement (e.g., D14)
+    10. tissue: Tissue type tested
+    11. avg_rel_exp: Average relative expression value
+    12. avg_rel_exp_lsd: Lower standard deviation
+    13. avg_rel_exp_hsd: Higher standard deviation
     
     All numeric values are formatted to 4 decimal places.
     """
@@ -1062,7 +1467,8 @@ def _create_csv_row(study_info: Dict[str, Any], trigger: str, trigger_info: Dict
         study_info["study_name"],
         study_info["study_code"],
         study_info["screening_model"],
-        target,                                # gene_target
+        target,                                # gene_target (now used for both genes and tissues)
+        item_type,                             # item_type (gene_target or tissue_target)
         trigger,                               # trigger (from metadata)
         str(trigger_info.get("dose", "")),     # dose (from metadata)
         str(trigger_info.get("dose_type", "")), # dose_type (detected)
@@ -1073,19 +1479,40 @@ def _create_csv_row(study_info: Dict[str, Any], trigger: str, trigger_info: Dict
         convert_to_numeric(high)               # avg_rel_exp_hsd
     ]
 
-def _print_export_summary(stats: Dict[str, int], output_path: str):
+def _print_export_summary(stats: Dict[str, Any], output_path: str):
     """Print summary statistics after CSV export."""
     print(f"\nExport Summary:")
     print(f"- Total studies processed: {stats['studies_processed']}")
-    print(f"- Studies with data: {stats['studies_with_data']}")
+    print(f"- Studies included in CSV: {stats['studies_with_data']}")
+    print(f"- Studies excluded from CSV: {stats.get('studies_excluded', 0)}")
     print(f"- Total data rows: {stats['total_rows']}")
     print(f"- Output file: {output_path}")
+    
+    if stats.get('excluded_studies'):
+        print(f"\nExcluded studies:")
+        for excluded in stats['excluded_studies']:
+            print(f"  - {excluded['name']} ({excluded['code']}): {excluded['reason']}")
 
 # ========================== MAIN EXECUTION ==========================
 def main():
     """
     Main execution function.
     """
+    # Set up logging first
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    base_output_dir = os.path.dirname(Config.MONTH_FOLDER)
+    month_name = os.path.basename(Config.MONTH_FOLDER).split(' ')[0]
+    log_file_path = os.path.join(base_output_dir, f"study_processing_log_{month_name}_{timestamp}.log")
+    
+    init_logger(log_file_path)
+    
+    logger.info("="*80)
+    logger.info("STUDY PROCESSING SESSION STARTED")
+    logger.info("="*80)
+    logger.info(f"Processing folder: {Config.MONTH_FOLDER}")
+    logger.info(f"Log file: {log_file_path}")
+    logger.info(f"Debug mode: {Config.DEBUG}")
+    
     study_folders = [
         os.path.join(Config.MONTH_FOLDER, name)
         for name in os.listdir(Config.MONTH_FOLDER)
@@ -1093,28 +1520,145 @@ def main():
     ]
     
     if not study_folders:
-        print("No studies found in the month folder.")
+        error_msg = "No studies found in the month folder."
+        print(error_msg)
+        logger.error(error_msg)
         return
 
     print(f"Processing {len(study_folders)} study folders")
+    logger.info(f"Found {len(study_folders)} study folders to process")
+    logger.debug(f"Study folders: {[os.path.basename(f) for f in study_folders]}")
+    
+    # Track processing statistics
+    processing_stats = {
+        "total_folders": len(study_folders),
+        "successful_processing": 0,
+        "failed_processing": 0,
+        "included_in_csv": 0,
+        "excluded_from_csv": 0,
+        "failed_folders": [],
+        "excluded_studies": []
+    }
     
     all_study_data = []
-    for study_folder in study_folders:
-        study_data = process_study_folder(study_folder)
-        if study_data:
-            all_study_data.append(study_data)
+    for i, study_folder in enumerate(study_folders, 1):
+        folder_name = os.path.basename(study_folder)
+        logger.info(f"[{i}/{len(study_folders)}] Processing: {folder_name}")
+        
+        try:
+            study_data = process_study_folder(study_folder)
+            if study_data:
+                all_study_data.append(study_data)
+                processing_stats["successful_processing"] += 1
+                logger.info(f"Successfully processed: {folder_name}")
+            else:
+                processing_stats["failed_processing"] += 1
+                processing_stats["failed_folders"].append(folder_name)
+                logger.error(f"Failed to extract any data from: {folder_name}")
+        except Exception as e:
+            processing_stats["failed_processing"] += 1
+            processing_stats["failed_folders"].append(folder_name)
+            error_msg = f"Exception processing {folder_name}: {e}"
+            print(f"ERROR: {error_msg}")
+            logger.error(error_msg)
+            logger.error(f"Full traceback: {traceback.format_exc()}")
 
-    timestamp = datetime.now().strftime("%Y%m%d")
-    base_output_dir = os.path.dirname(Config.MONTH_FOLDER)
-    month_name = os.path.basename(Config.MONTH_FOLDER).split(' ')[0]
+    # Log processing summary
+    logger.info("="*80)
+    logger.info("PROCESSING SUMMARY")
+    logger.info("="*80)
+    logger.info(f"Total folders found: {processing_stats['total_folders']}")
+    logger.info(f"Successfully processed: {processing_stats['successful_processing']}")
+    logger.info(f"Failed processing: {processing_stats['failed_processing']}")
     
-    json_output_path = os.path.join(base_output_dir, f"study_metadata_{month_name}_{timestamp}.json")
+    if processing_stats["failed_folders"]:
+        logger.warning(f"Failed folders: {processing_stats['failed_folders']}")
+
+    # Save JSON output
+    json_timestamp = datetime.now().strftime("%Y%m%d")
+    json_output_path = os.path.join(base_output_dir, f"study_metadata_{month_name}_{json_timestamp}.json")
     with open(json_output_path, "w", encoding="utf-8") as f:
         json.dump(all_study_data, f, indent=2, ensure_ascii=False)
     print(f"\nWrote study metadata to {json_output_path}")
+    logger.info(f"Wrote study metadata to {json_output_path}")
     
-    csv_output_path = os.path.join(base_output_dir, f"study_data_{month_name}_{timestamp}.csv")
+    # Export to CSV with detailed logging
+    csv_output_path = os.path.join(base_output_dir, f"study_data_{month_name}_{json_timestamp}.csv")
+    logger.info("="*80)
+    logger.info("CSV EXPORT STARTING")
+    logger.info("="*80)
+    
     export_to_csv(all_study_data, csv_output_path)
+    
+    # Create final summary report
+    _create_final_summary_report(processing_stats, all_study_data, log_file_path)
+    
+    # Final summary
+    logger.info("="*80)
+    logger.info("SESSION COMPLETED")
+    logger.info("="*80)
+    logger.info(f"Log file saved to: {log_file_path}")
+    print(f"\nDetailed log saved to: {log_file_path}")
+
+def _create_final_summary_report(processing_stats: Dict[str, Any], all_study_data: List[Dict[str, Any]], log_file_path: str):
+    """Create a comprehensive summary report at the end of the log file."""
+    if not logger:
+        return
+    
+    logger.info("="*80)
+    logger.info("FINAL PROCESSING REPORT")
+    logger.info("="*80)
+    
+    # Overall statistics
+    logger.info("OVERALL STATISTICS:")
+    logger.info(f"  Total study folders found: {processing_stats['total_folders']}")
+    logger.info(f"  Successfully processed: {processing_stats['successful_processing']}")
+    logger.info(f"  Failed to process: {processing_stats['failed_processing']}")
+    logger.info(f"  Success rate: {processing_stats['successful_processing']/processing_stats['total_folders']*100:.1f}%")
+    
+    # Failed folders
+    if processing_stats["failed_folders"]:
+        logger.warning("FOLDERS THAT FAILED PROCESSING:")
+        for folder in processing_stats["failed_folders"]:
+            logger.warning(f"  - {folder}")
+    
+    # Studies with data breakdown
+    studies_with_metadata = sum(1 for study in all_study_data if any(k in study for k in ['study_name', 'study_code', 'tissues']))
+    studies_with_rel_exp = sum(1 for study in all_study_data if 'relative_expression' in study)
+    studies_with_both = sum(1 for study in all_study_data if 'relative_expression' in study and any(k in study for k in ['study_name', 'study_code']))
+    
+    logger.info("DATA EXTRACTION BREAKDOWN:")
+    logger.info(f"  Studies with metadata: {studies_with_metadata}")
+    logger.info(f"  Studies with relative expression data: {studies_with_rel_exp}")
+    logger.info(f"  Studies with both metadata and expression data: {studies_with_both}")
+    
+    # Detailed study breakdown
+    logger.info("DETAILED STUDY BREAKDOWN:")
+    for study in all_study_data:
+        study_name = study.get('study_name', 'Unknown')
+        study_code = study.get('study_code', 'Unknown')
+        
+        has_metadata = any(k in study for k in ['study_name', 'study_code', 'tissues', 'trigger_dose_map'])
+        has_rel_exp = 'relative_expression' in study
+        
+        if has_rel_exp:
+            rel_exp_data = study['relative_expression'].get('relative_expression_data', {})
+            num_triggers = len(rel_exp_data)
+            num_targets = len(study['relative_expression'].get('targets', []))
+            total_data_points = sum(len(trigger_data) for trigger_data in rel_exp_data.values())
+        else:
+            num_triggers = num_targets = total_data_points = 0
+        
+        status = []
+        if has_metadata:
+            status.append("metadata")
+        if has_rel_exp:
+            status.append(f"rel_exp({num_triggers}t×{num_targets}g={total_data_points}pts)")
+        
+        status_str = ", ".join(status) if status else "no_data"
+        logger.info(f"  {study_name} ({study_code}): {status_str}")
+    
+    logger.info("="*80)
 
 if __name__ == "__main__":
     main()
