@@ -1,0 +1,336 @@
+DETAILED STUDY MISMATCH REPORT
+Generated: 2025-06-12 12:03:21
+Dataset 1: study_data_01_20250612.csv
+Dataset 2: LO_study_data (1).xlsx
+================================================================================
+
+STUDIES WITH MISMATCHED ROW COUNTS:
+--------------------------------------------------
+
+Study: hmSNCA_002_ICV
+  Dataset 1 rows: 0
+  Dataset 2 rows: 72
+  Difference: -72 (absolute: 72)
+
+Study: hACVR2b_SEAP_KD_1 
+  Dataset 1 rows: 0
+  Dataset 2 rows: 60
+  Difference: -60 (absolute: 60)
+
+Study: hACVR2b_SEAP_KD_2
+  Dataset 1 rows: 1
+  Dataset 2 rows: 60
+  Difference: -59 (absolute: 59)
+  Dataset 1 - Targets: 0, Triggers: 1
+  Dataset 2 - Targets: 0, Triggers: 20
+  Triggers only in Dataset 1: Description
+  Triggers only in Dataset 2: AC007093, AC007094, AC007095, AC007096, AC007097, AC007098, AC007099, AC007100, AC007101, AC007102, AC007103, AC007104, AC007105, AC007106, AC007107, AC007108, AC007109, AC007155, AC905118, Saline
+
+Study: mSOD1_50_ICV
+  Dataset 1 rows: 52
+  Dataset 2 rows: 104
+  Difference: -52 (absolute: 52)
+  Dataset 1 - Targets: 0, Triggers: 13
+  Dataset 2 - Targets: 0, Triggers: 13
+  Triggers only in Dataset 1: AC005901 (will be shipped on 1/4/24)
+  Triggers only in Dataset 2: AC005901
+
+Study: Load & Go_Test
+  Dataset 1 rows: 48
+  Dataset 2 rows: 0
+  Difference: +48 (absolute: 48)
+
+Study: hIL33_AAV8_KD_6
+  Dataset 1 rows: 0
+  Dataset 2 rows: 45
+  Difference: -45 (absolute: 45)
+
+Study: hIL33_AAV8_KD_4
+  Dataset 1 rows: 19
+  Dataset 2 rows: 60
+  Difference: -41 (absolute: 41)
+  Dataset 1 - Targets: 0, Triggers: 19
+  Dataset 2 - Targets: 0, Triggers: 20
+  Triggers only in Dataset 2: saline
+
+Study: mGPR75_001_ICV
+  Dataset 1 rows: 0
+  Dataset 2 rows: 39
+  Difference: -39 (absolute: 39)
+
+Study: mAlk7_Pharma_4
+  Dataset 1 rows: 0
+  Dataset 2 rows: 36
+  Difference: -36 (absolute: 36)
+
+Study: mAdi_110_HDAC11_1
+  Dataset 1 rows: 0
+  Dataset 2 rows: 36
+  Difference: -36 (absolute: 36)
+
+Study: hPDE3B_AAV8_LO_1
+  Dataset 1 rows: 0
+  Dataset 2 rows: 33
+  Difference: -33 (absolute: 33)
+
+Study: hPDE3B_AAV8_LO_2
+  Dataset 1 rows: 0
+  Dataset 2 rows: 33
+  Difference: -33 (absolute: 33)
+
+Study: hIL33_3
+  Dataset 1 rows: 30
+  Dataset 2 rows: 0
+  Difference: +30 (absolute: 30)
+
+Study: hIL33_AAV8_KD_5
+  Dataset 1 rows: 13
+  Dataset 2 rows: 42
+  Difference: -29 (absolute: 29)
+  Dataset 1 - Targets: 0, Triggers: 13
+  Dataset 2 - Targets: 0, Triggers: 14
+  Triggers only in Dataset 2: saline
+
+Study: hALK7_AAV8_KD_7
+  Dataset 1 rows: 12
+  Dataset 2 rows: 39
+  Difference: -27 (absolute: 27)
+  Dataset 1 - Targets: 0, Triggers: 12
+  Dataset 2 - Targets: 0, Triggers: 13
+  Triggers only in Dataset 1: TBD
+  Triggers only in Dataset 2: AC006111, saline
+
+Study: mG3TD_67
+  Dataset 1 rows: 0
+  Dataset 2 rows: 26
+  Difference: -26 (absolute: 26)
+
+Study: hALK7_AAV8_KD_8
+  Dataset 1 rows: 1
+  Dataset 2 rows: 27
+  Difference: -26 (absolute: 26)
+  Dataset 1 - Targets: 0, Triggers: 1
+  Dataset 2 - Targets: 0, Triggers: 9
+  Triggers only in Dataset 1: Euthanize
+  Triggers only in Dataset 2: AC005847, AC007192, AC007193, AC007194, AC007195, AC007196, AC007197, AC007198, saline
+
+Study: mALK7_pharma_3
+  Dataset 1 rows: 0
+  Dataset 2 rows: 25
+  Difference: -25 (absolute: 25)
+
+Study: G2rCNS_21
+  Dataset 1 rows: 30
+  Dataset 2 rows: 54
+  Difference: -24 (absolute: 24)
+  Dataset 1 - Targets: 0, Triggers: 5
+  Dataset 2 - Targets: 0, Triggers: 5
+
+Study: mIRBMPep_3
+  Dataset 1 rows: 4
+  Dataset 2 rows: 28
+  Difference: -24 (absolute: 24)
+  Dataset 1 - Targets: 1, Triggers: 1
+  Dataset 2 - Targets: 0, Triggers: 7
+  Triggers only in Dataset 1: 250 uL/25 g  Saline
+  Triggers only in Dataset 2: AC003222, AC007034, AC007035, AC007036, AC007037, AC007038, Saline
+
+Study: rMac_Aif1_4
+  Dataset 1 rows: 0
+  Dataset 2 rows: 22
+  Difference: -22 (absolute: 22)
+
+Study: mAdi_105_FABP4_2
+  Dataset 1 rows: 2
+  Dataset 2 rows: 22
+  Difference: -20 (absolute: 20)
+  Dataset 1 - Targets: 1, Triggers: 1
+  Dataset 2 - Targets: 1, Triggers: 11
+  Triggers only in Dataset 1: 250ul/25g   Saline  (D1)
+  Triggers only in Dataset 2: AC006252, AC006253, AC006254, AC006255, AC006256, AC006257, AC006258, AC006259, AC006260, AC006261, saline
+
+Study: mChiral_6
+  Dataset 1 rows: 6
+  Dataset 2 rows: 24
+  Difference: -18 (absolute: 18)
+  Dataset 1 - Targets: 1, Triggers: 6
+  Dataset 2 - Targets: 1, Triggers: 4
+  Triggers only in Dataset 1: Day 15, Day 29, Day 43, Day 57, Day 71, Day 85
+  Triggers only in Dataset 2: AC911061, AC911682, AC911713, Saline
+
+Study: rINHBA_liver_02
+  Dataset 1 rows: 0
+  Dataset 2 rows: 18
+  Difference: -18 (absolute: 18)
+
+Study: mALK7_pharma_4
+  Dataset 1 rows: 18
+  Dataset 2 rows: 0
+  Difference: +18 (absolute: 18)
+
+Study: mMAC_11
+  Dataset 1 rows: 0
+  Dataset 2 rows: 16
+  Difference: -16 (absolute: 16)
+
+Study: rPCSK6_7	
+  Dataset 1 rows: 0
+  Dataset 2 rows: 16
+  Difference: -16 (absolute: 16)
+
+Study: rIL33_8_Alternaria
+  Dataset 1 rows: 3
+  Dataset 2 rows: 18
+  Difference: -15 (absolute: 15)
+  Dataset 1 - Targets: 3, Triggers: 1
+  Dataset 2 - Targets: 0, Triggers: 5
+  Triggers only in Dataset 1: 200uL  Saline NA (D1, 3)
+  Triggers only in Dataset 2: AC001714, AC002666, AC005120, AC005889, saline
+
+Study: rTSLP_IL33_Dimer_2
+  Dataset 1 rows: 2
+  Dataset 2 rows: 16
+  Difference: -14 (absolute: 14)
+  Dataset 1 - Targets: 2, Triggers: 1
+  Dataset 2 - Targets: 2, Triggers: 8
+  Triggers only in Dataset 1: 200uL/200g  Saline   (D1, D4 )
+  Triggers only in Dataset 2: AC005889+AC001714, AC006672, AC006907, AC007373, AC007374, AC007375 + AC007376, AC007375 + AC007377, Saline
+
+Study: eTox_163
+  Dataset 1 rows: 6
+  Dataset 2 rows: 18
+  Difference: -12 (absolute: 12)
+  Dataset 1 - Targets: 2, Triggers: 3
+  Dataset 2 - Targets: 0, Triggers: 5
+  Triggers only in Dataset 1: AC006188 (p440), AC006189 (p1021), Saline
+  Triggers only in Dataset 2:  AC006188 ,  AC006188  ,  AC006189,  AC006189 ,  Saline 
+
+Study: rPilot_MCT_07
+  Dataset 1 rows: 0
+  Dataset 2 rows: 12
+  Difference: -12 (absolute: 12)
+
+Study: mSNCA_02_ICV
+  Dataset 1 rows: 0
+  Dataset 2 rows: 12
+  Difference: -12 (absolute: 12)
+
+Study: mF12_Phos_38
+  Dataset 1 rows: 0
+  Dataset 2 rows: 11
+  Difference: -11 (absolute: 11)
+
+Study: mG3TD_065
+  Dataset 1 rows: 0
+  Dataset 2 rows: 10
+  Difference: -10 (absolute: 10)
+
+Study: rLDimer_10_RNAscope
+  Dataset 1 rows: 2
+  Dataset 2 rows: 12
+  Difference: -10 (absolute: 10)
+  Dataset 1 - Targets: 2, Triggers: 1
+  Dataset 2 - Targets: 2, Triggers: 6
+  Triggers only in Dataset 1: Saline
+  Triggers only in Dataset 2: AC006713, AC006714, AC006715, AC006720, AC006721, saline
+
+Study: rIL33_9
+  Dataset 1 rows: 1
+  Dataset 2 rows: 11
+  Difference: -10 (absolute: 10)
+  Dataset 1 - Targets: 1, Triggers: 1
+  Dataset 2 - Targets: 1, Triggers: 11
+  Triggers only in Dataset 1: 200 uL/IT  Saline  (D1, D3)
+  Triggers only in Dataset 2:  AC005114 , AC005113, AC005113 , AC005114, AC005115, AC005115 , AC005117, AC005121, AC005121 , AC005889, Saline  
+
+Study: mF12_phos_38
+  Dataset 1 rows: 9
+  Dataset 2 rows: 0
+  Difference: +9 (absolute: 9)
+
+Study: rHDM_Pilot_2
+  Dataset 1 rows: 6
+  Dataset 2 rows: 15
+  Difference: -9 (absolute: 9)
+  Dataset 1 - Targets: 3, Triggers: 2
+  Dataset 2 - Targets: 3, Triggers: 2
+  Triggers only in Dataset 1: 250uL  HDM 5ug (D1, 3), 250uL  Saline  (D1, 3)
+  Triggers only in Dataset 2: HDM, saline
+
+Study: hIL33_2
+  Dataset 1 rows: 8
+  Dataset 2 rows: 0
+  Difference: +8 (absolute: 8)
+
+Study: mG3TD_066
+  Dataset 1 rows: 0
+  Dataset 2 rows: 8
+  Difference: -8 (absolute: 8)
+
+Study: mOVA_1
+  Dataset 1 rows: 6
+  Dataset 2 rows: 12
+  Difference: -6 (absolute: 6)
+  Dataset 1 - Targets: 3, Triggers: 2
+  Dataset 2 - Targets: 4, Triggers: 2
+
+Study: rIL33_12
+  Dataset 1 rows: 1
+  Dataset 2 rows: 7
+  Difference: -6 (absolute: 6)
+  Dataset 1 - Targets: 1, Triggers: 1
+  Dataset 2 - Targets: 1, Triggers: 4
+  Triggers only in Dataset 1: 200uL  Saline N/A (D1, D3)
+  Triggers only in Dataset 2: AC005120, AC005120 , AC005889, Saline
+
+Study: rSQL_60
+  Dataset 1 rows: 0
+  Dataset 2 rows: 6
+  Difference: -6 (absolute: 6)
+
+Study: mCYP11B1_18
+  Dataset 1 rows: 7
+  Dataset 2 rows: 13
+  Difference: -6 (absolute: 6)
+  Dataset 1 - Targets: 0, Triggers: 7
+  Dataset 2 - Targets: 0, Triggers: 7
+
+Study: rIL33_11_Dose_Duration
+  Dataset 1 rows: 4
+  Dataset 2 rows: 8
+  Difference: -4 (absolute: 4)
+  Dataset 1 - Targets: 1, Triggers: 4
+  Dataset 2 - Targets: 0, Triggers: 4
+  Triggers only in Dataset 1: Day 15 Harvest, Day 29 Harvest, Day 43 Harvest, Day 8 Harvest
+  Triggers only in Dataset 2:  AC005889,  AC005889 ,  Saline,  Saline 
+
+Study: hMYOC_AAV8_KD_13
+  Dataset 1 rows: 3
+  Dataset 2 rows: 7
+  Difference: -4 (absolute: 4)
+  Dataset 1 - Targets: 0, Triggers: 3
+  Dataset 2 - Targets: 0, Triggers: 3
+
+Study: eTox161
+  Dataset 1 rows: 4
+  Dataset 2 rows: 7
+  Difference: -3 (absolute: 3)
+  Dataset 1 - Targets: 1, Triggers: 4
+  Dataset 2 - Targets: 1, Triggers: 4
+
+Study: rINHBA_liver_01
+  Dataset 1 rows: 24
+  Dataset 2 rows: 27
+  Difference: -3 (absolute: 3)
+  Dataset 1 - Targets: 3, Triggers: 8
+  Dataset 2 - Targets: 3, Triggers: 9
+  Triggers only in Dataset 1: AC007158, AC007159, AC007160, AC007161, AC007162, AC007163, AC007164, Vehicle
+  Triggers only in Dataset 2:  AC007158 ,  AC007159 ,  AC007160 ,  AC007161 ,  AC007162 ,  AC007163 ,  AC007164 ,  AC007165 ,  Vehicle 
+
+Study: mG3TD_64
+  Dataset 1 rows: 8
+  Dataset 2 rows: 9
+  Difference: -1 (absolute: 1)
+  Dataset 1 - Targets: 0, Triggers: 8
+  Dataset 2 - Targets: 1, Triggers: 9
+  Triggers only in Dataset 2: Saline

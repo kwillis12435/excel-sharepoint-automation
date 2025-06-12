@@ -1,0 +1,103 @@
+2025-06-12 12:11:48 - INFO - process_study_folder:1313 - Starting processing of study: 2024011202 (mAdi_110_HDAC11_1)
+2025-06-12 12:11:48 - DEBUG - process_study_folder:1314 - Study folder path: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024011202 (mAdi_110_HDAC11_1)
+2025-06-12 12:11:48 - DEBUG - process_study_folder:1315 - Expected info file: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024011202 (mAdi_110_HDAC11_1)\2024011202 (mAdi_110_HDAC11_1).xlsm
+2025-06-12 12:11:48 - DEBUG - process_study_folder:1316 - Expected results folder: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024011202 (mAdi_110_HDAC11_1)\Results
+2025-06-12 12:11:48 - DEBUG - process_study_folder:1323 - Found info file: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024011202 (mAdi_110_HDAC11_1)\2024011202 (mAdi_110_HDAC11_1).xlsm
+2025-06-12 12:11:48 - DEBUG - safe_workbook_operation:409 - Opening workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024011202 (mAdi_110_HDAC11_1)\2024011202 (mAdi_110_HDAC11_1).xlsm (read_only=True, data_only=True)
+2025-06-12 12:11:48 - INFO - extract_study_metadata:606 - Extracting metadata for study: 2024011202 (mAdi_110_HDAC11_1)
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:607 - Available sheets: ['Procedure Request Form', 'Dose Calculations', 'Animal Receipt', 'Dose Admin - CNS', 'Tissue Weights', 'Dose Admin - IT', 'Dose Admin - Inhalation', 'Body Weights', 'Blood', 'Inj Record - Trigger', 'Harvest', 'Inj Record - Trigger - SD', 'Inj Record - Other', 'Inj Record - Other - SD', 'BW and Grouping', 'Treatment', 'Study Deviations', 'Medical Records', 'Unscheduled', 'Drawing', 'TW-2mL PNA Tube-SidePort', 'TW-2mL PNA Tube-Top', 'TW Formulas', 'FOB Tabulation', 'Plasmid Dosing Prep', 'AAV8 Dosing Prep', 'Dropdown', 'Plate Map', 'Dosing-Virology', 'Dose Administration - ADME PK', 'Urine Collection - ADME PK', 'Blood Collection - ADME PK', 'CSF Collection', 'IOPs -Ocular', 'Dose Administration - Ocular', 'Mouse Anesthesia - Ocular', 'Euthanasia (Rabbits) - Ocular', 'Imaging Obs - Ocular', 'Rat Anesthesia - Ocular', 'BW-Obs Ocular', 'Group Description']
+2025-06-12 12:11:48 - INFO - extract_study_metadata:656 - Extracted 18 valid triggers from metadata for 2024011202 (mAdi_110_HDAC11_1) (filtered 0 invalid)
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 1: 'Saline' -> dose: None
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 2: 'AC006580' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 3: 'AC006581' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 4: 'AC006582' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 5: 'AC006583' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 6: 'AC006584' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 7: 'AC006585' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 8: 'AC006586' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 9: 'AC006587' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 10: 'AC006588' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 11: 'AC006589' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 12: 'AC006590' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 13: 'AC006591' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 14: 'AC006592' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 15: 'AC006593' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 16: 'AC006594' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 17: 'AC006595' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - extract_study_metadata:661 -   Trigger 18: 'AC006596' -> dose: 1.5 mpk
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'Saline' -> dose: 'None', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006580' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006581' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006582' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006583' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006584' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006585' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006586' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006587' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006588' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006589' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006590' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006591' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006592' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006593' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006594' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006595' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:48 - DEBUG - _create_trigger_dose_map:772 - Trigger dose mapping: 'AC006596' -> dose: '1.5 mpk', type: 'None', flagged: False
+2025-06-12 12:11:49 - DEBUG - safe_workbook_operation:416 - Successfully processed workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024011202 (mAdi_110_HDAC11_1)\2024011202 (mAdi_110_HDAC11_1).xlsm
+2025-06-12 12:11:49 - INFO - process_study_folder:1329 - Successfully extracted metadata for 2024011202 (mAdi_110_HDAC11_1)
+2025-06-12 12:11:49 - DEBUG - process_study_folder:1333 -   Metadata study_name: mAdi_110_HDAC11_1
+2025-06-12 12:11:49 - DEBUG - process_study_folder:1333 -   Metadata study_code: 2024011202
+2025-06-12 12:11:49 - DEBUG - process_study_folder:1333 -   Metadata screening_model: Mouse
+2025-06-12 12:11:49 - DEBUG - process_study_folder:1333 -   Metadata tissues: ['inguinal white adipose (iWAT)', 'perigonadal white adipose tissue (pgWAT)']
+2025-06-12 12:11:49 - DEBUG - process_study_folder:1333 -   Metadata trigger_dose_map: {'Saline': {'dose': None, 'dose_type': None, 'dose_flagged': False}, 'AC006580': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006581': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006582': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006583': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006584': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006585': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006586': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006587': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006588': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006589': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006590': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006591': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006592': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006593': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006594': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006595': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}, 'AC006596': {'dose': '1.5 mpk', 'dose_type': None, 'dose_flagged': False}}
+2025-06-12 12:11:49 - DEBUG - process_study_folder:1333 -   Metadata timepoint: D15
+2025-06-12 12:11:49 - DEBUG - process_study_folder:1346 - Found results file: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024011202 (mAdi_110_HDAC11_1)\Results\mAdi_110_Hdac11_1 2024011202.xlsm
+2025-06-12 12:11:49 - DEBUG - safe_workbook_operation:409 - Opening workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024011202 (mAdi_110_HDAC11_1)\Results\mAdi_110_Hdac11_1 2024011202.xlsm (read_only=True, data_only=True)
+2025-06-12 12:11:49 - INFO - extract_relative_expression_data:947 - Extracting relative expression data
+2025-06-12 12:11:49 - DEBUG - extract_relative_expression_data:948 - Available sheets: ['LAR Sheet(s)', 'Isolation Protocol', 'RNA Quant-It Data', 'BioMek CSV', 'MultiFlo CSV', 'Span8 CSV', 'cDNA and qPCR Setup (A)', 'cDNA & qPCR Setup (M)', 'Plate Setup', 'AmpPlots', 'RawData', 'Rel Exp-Target1', 'Rel Exp-Target2', 'Rel Exp-Target3', 'Rel Exp-Target4', 'Rel Exp-Target5', 'Rel Exp-Target6', 'Rel Exp-Target7', 'Rel Exp-Target8', 'Rel Exp-Target9', 'Rel Exp-Target10', 'Rel Exp-Target11', 'Rel Exp-Target12', 'Rel Exp-Target13', 'Rel Exp-Target14', 'Rel Exp-Target15', 'Rel Exp-Target16', 'Rel Exp-Target17', 'Rel Exp-Target18', 'Compiled Indiv. & Grp.', 'Graphs', 'Trigger Diagrams', 'Input']
+2025-06-12 12:11:49 - INFO - extract_relative_expression_data:959 - Using sheet: 'Compiled Indiv. & Grp.' for relative expression data
+2025-06-12 12:11:59 - DEBUG - extract_targets_from_row:573 - Target row cell 'iWAT': classified as target
+2025-06-12 12:11:59 - DEBUG - extract_targets_from_row:586 -   Added to targets: 'iWAT'
+2025-06-12 12:11:59 - DEBUG - extract_targets_from_row:573 - Target row cell 'pgWAT': classified as target
+2025-06-12 12:11:59 - DEBUG - extract_targets_from_row:586 -   Added to targets: 'pgWAT'
+2025-06-12 12:11:59 - DEBUG - extract_targets_from_row:565 - Skipped invalid target name: '0'
+2025-06-12 12:11:59 - DEBUG - extract_targets_from_row:565 - Skipped invalid target name: '0'
+2025-06-12 12:11:59 - DEBUG - extract_targets_from_row:565 - Skipped invalid target name: '0'
+2025-06-12 12:11:59 - DEBUG - extract_targets_from_row:565 - Skipped invalid target name: '0'
+2025-06-12 12:11:59 - INFO - extract_relative_expression_data:1032 - Data extraction plan: 2 gene targets, 0 tissue targets, 2 total items
+2025-06-12 12:12:01 - DEBUG - extract_relative_expression_data:1118 - Filtered out dose-like trigger: '1.5 mpk'
+2025-06-12 12:12:01 - DEBUG - extract_relative_expression_data:1096 - Filtered out invalid trigger: 'x'
+2025-06-12 12:12:01 - INFO - extract_relative_expression_data:1127 - Filtered 2 invalid/dose-like triggers from 3 raw triggers, kept 1 triggers
+2025-06-12 12:12:01 - WARNING - extract_relative_expression_data:1133 - Only found 1 triggers in results sheet, attempting metadata matching
+2025-06-12 12:12:01 - INFO - extract_relative_expression_data:1142 - Found 2 gene targets, 0 tissue targets, and 1 triggers in relative expression data
+2025-06-12 12:12:01 - DEBUG - extract_relative_expression_data:1143 - Gene targets: ['iWAT', 'pgWAT']
+2025-06-12 12:12:01 - DEBUG - extract_relative_expression_data:1144 - Tissue targets: []
+2025-06-12 12:12:01 - DEBUG - extract_relative_expression_data:1148 -   Trigger 1: 'Saline'
+2025-06-12 12:12:01 - DEBUG - debug_print:128 -   Saline + iWAT: {'rel_exp': 1, 'low': 0.1853284318356362, 'high': 0.22748852307835232}
+2025-06-12 12:12:01 - DEBUG - debug_print:128 -   Saline + pgWAT: {'rel_exp': 0.9999999999999999, 'low': 0.1567858792996235, 'high': 0.18593839387959565}
+2025-06-12 12:12:01 - DEBUG - safe_workbook_operation:416 - Successfully processed workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024011202 (mAdi_110_HDAC11_1)\Results\mAdi_110_Hdac11_1 2024011202.xlsm
+2025-06-12 12:12:01 - INFO - process_study_folder:1380 - Using longer trigger list: metadata has 18 vs results 1
+2025-06-12 12:12:01 - DEBUG - safe_workbook_operation:409 - Opening workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024011202 (mAdi_110_HDAC11_1)\Results\mAdi_110_Hdac11_1 2024011202.xlsm (read_only=True, data_only=True)
+2025-06-12 12:12:01 - INFO - _extract_relative_expression_with_metadata_triggers:1957 - Enhanced trigger matching: using 18 metadata triggers
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2018 - Found 18 data rows with expression values for trigger matching
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'Saline' to row 130 (results cell: 'Saline')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006580' to row 131 (results cell: '1.5 mpk')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006581' to row 132 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006582' to row 133 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006583' to row 134 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006584' to row 135 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006585' to row 136 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006586' to row 137 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006587' to row 138 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006588' to row 139 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006589' to row 140 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006590' to row 141 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006591' to row 142 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006592' to row 143 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006593' to row 144 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006594' to row 145 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006595' to row 146 (results cell: '')
+2025-06-12 12:12:07 - DEBUG - _extract_relative_expression_with_metadata_triggers:2046 - Positionally mapped metadata trigger 'AC006596' to row 147 (results cell: '')
+2025-06-12 12:12:07 - INFO - _extract_relative_expression_with_metadata_triggers:2050 - Positional mapping result: 18/18 triggers mapped
+2025-06-12 12:12:07 - DEBUG - safe_workbook_operation:416 - Successfully processed workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024011202 (mAdi_110_HDAC11_1)\Results\mAdi_110_Hdac11_1 2024011202.xlsm
+2025-06-12 12:12:07 - INFO - process_study_folder:1397 - Enhanced trigger matching successful: 18 triggers found

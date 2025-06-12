@@ -404,7 +404,7 @@ class StudyDataAnalyzer:
         
         print(f"✓ Detailed report exported to: {output_file}")
 
-def compare_datasets(analyzer1: StudyDataAnalyzer, analyzer2: StudyDataAnalyzer):
+def compare_datasets(analyzer1: StudyDataAnalyzer, analyzer2: StudyDataAnalyzer, export_mismatches: str = None):
     """Compare two datasets and highlight differences."""
     print(f"\n🔄 DATASET COMPARISON")
     print("="*80)
@@ -448,8 +448,11 @@ def compare_datasets(analyzer1: StudyDataAnalyzer, analyzer2: StudyDataAnalyzer)
         all_studies = set(studies1.keys()) | set(studies2.keys())
         
         print(f"\n📋 STUDY-BY-STUDY COMPARISON:")
-        print(f"{'Study Name':<40} {'Dataset 1':<12} {'Dataset 2':<12} {'Difference'}")
-        print("-"*80)
+        print(f"{'Study Name':<40} {'Dataset 1':<12} {'Dataset 2':<12} {'Difference':<15} {'Match Status'}")
+        print("-"*95)
+        
+        exact_matches = 0
+        total_studies = len(all_studies)
         
         for study in sorted(all_studies):
             rows1 = studies1.get(study, 0)
@@ -457,16 +460,110 @@ def compare_datasets(analyzer1: StudyDataAnalyzer, analyzer2: StudyDataAnalyzer)
             diff = rows1 - rows2
             
             status = ""
+            match_status = ""
             if study not in studies1:
                 status = "(only in dataset 2)"
+                match_status = "MISSING DS1"
             elif study not in studies2:
                 status = "(only in dataset 1)"
-            elif diff != 0:
+                match_status = "MISSING DS2"
+            elif diff == 0:
+                status = "✓ EXACT MATCH"
+                match_status = "✓ EXACT"
+                exact_matches += 1
+            else:
                 status = f"({diff:+d})"
+                match_status = "DIFFERENT"
             
-            print(f"{study[:39]:<40} {rows1:<12} {rows2:<12} {status}")
+            print(f"{study[:39]:<40} {rows1:<12} {rows2:<12} {status:<15} {match_status}")
+        
+        print("-"*95)
+        print(f"📊 MATCH SUMMARY:")
+        print(f"   Exact matches: {exact_matches}/{total_studies} ({exact_matches/total_studies*100:.1f}%)")
+        print(f"   Different counts: {total_studies - exact_matches}")
+        print(f"   Only in Dataset 1: {len([s for s in all_studies if s not in studies2])}")
+        print(f"   Only in Dataset 2: {len([s for s in all_studies if s not in studies1])}")
+        
+        # Show detailed breakdown for mismatched studies
+        mismatched_studies = [(study, studies1.get(study, 0), studies2.get(study, 0)) 
+                             for study in all_studies 
+                             if studies1.get(study, 0) != studies2.get(study, 0)]
+        
+        if mismatched_studies:
+            print(f"\n🔍 DETAILED MISMATCHES (showing studies with different row counts):")
+            print(f"{'Study Name':<40} {'DS1 Rows':<10} {'DS2 Rows':<10} {'Difference':<12} {'Priority'}")
+            print("-"*85)
+            
+            # Sort by absolute difference (largest discrepancies first)
+            mismatched_studies.sort(key=lambda x: abs(x[1] - x[2]), reverse=True)
+            
+            for study, rows1, rows2 in mismatched_studies[:15]:  # Show top 15 discrepancies
+                diff = rows1 - rows2
+                
+                # Assign priority based on difference magnitude
+                if abs(diff) >= 30:
+                    priority = "🔴 HIGH"
+                elif abs(diff) >= 10:
+                    priority = "🟡 MED"
+                else:
+                    priority = "🟢 LOW"
+                
+                print(f"{study[:39]:<40} {rows1:<10} {rows2:<10} {diff:+d}({abs(diff)}){'':<4} {priority}")
+            
+            if len(mismatched_studies) > 15:
+                print(f"   ... and {len(mismatched_studies) - 15} more mismatched studies")
+        
+        # Export detailed mismatch report if requested
+        if export_mismatches and mismatched_studies:
+            export_mismatch_report(mismatched_studies, stats1, stats2, export_mismatches)
     
     print("="*80)
+
+def export_mismatch_report(mismatched_studies: List[Tuple], stats1: Dict, stats2: Dict, output_file: str):
+    """Export detailed mismatch report to a file."""
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write("DETAILED STUDY MISMATCH REPORT\n")
+        f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"Dataset 1: {stats1['file_info']['file_name']}\n")
+        f.write(f"Dataset 2: {stats2['file_info']['file_name']}\n")
+        f.write("="*80 + "\n\n")
+        
+        f.write("STUDIES WITH MISMATCHED ROW COUNTS:\n")
+        f.write("-"*50 + "\n")
+        
+        for study, rows1, rows2 in mismatched_studies:
+            diff = rows1 - rows2
+            f.write(f"\nStudy: {study}\n")
+            f.write(f"  Dataset 1 rows: {rows1}\n")
+            f.write(f"  Dataset 2 rows: {rows2}\n")
+            f.write(f"  Difference: {diff:+d} (absolute: {abs(diff)})\n")
+            
+            # If we have detailed study data, show target/trigger differences
+            try:
+                study1_details = next((s for s in stats1['study_stats']['studies'] if s['name'] == study), None)
+                study2_details = next((s for s in stats2['study_stats']['studies'] if s['name'] == study), None)
+                
+                if study1_details and study2_details:
+                    f.write(f"  Dataset 1 - Targets: {study1_details['unique_targets']}, Triggers: {study1_details['unique_triggers']}\n")
+                    f.write(f"  Dataset 2 - Targets: {study2_details['unique_targets']}, Triggers: {study2_details['unique_triggers']}\n")
+                    
+                    # Show trigger differences if available
+                    if 'triggers' in study1_details and 'triggers' in study2_details:
+                        triggers1 = set(study1_details['triggers'])
+                        triggers2 = set(study2_details['triggers'])
+                        
+                        only_in_1 = triggers1 - triggers2
+                        only_in_2 = triggers2 - triggers1
+                        
+                        if only_in_1:
+                            f.write(f"  Triggers only in Dataset 1: {', '.join(sorted(only_in_1))}\n")
+                        if only_in_2:
+                            f.write(f"  Triggers only in Dataset 2: {', '.join(sorted(only_in_2))}\n")
+                
+            except Exception as e:
+                f.write(f"  (Could not extract detailed comparison: {e})\n")
+    
+    print(f"✓ Detailed mismatch report exported to: {output_file}")
 
 def main():
     """Main function to handle command line arguments and run analysis."""
@@ -486,6 +583,7 @@ Examples:
     parser.add_argument('--compare', '-c', action='store_true', 
                        help='Compare two datasets (requires exactly 2 input files)')
     parser.add_argument('--json', '-j', help='Export statistics as JSON file')
+    parser.add_argument('--export-mismatches', '-m', help='Export detailed mismatch report to file (use with --compare)')
     
     args = parser.parse_args()
     
@@ -514,7 +612,7 @@ Examples:
     
     # Compare datasets if requested
     if args.compare and len(analyzers) == 2:
-        compare_datasets(analyzers[0], analyzers[1])
+        compare_datasets(analyzers[0], analyzers[1], args.export_mismatches)
     
     print(f"\n✅ Analysis complete!")
 

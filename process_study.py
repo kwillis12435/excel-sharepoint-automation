@@ -110,7 +110,7 @@ class Config:
         'sciatic nerve','striatum','lymph node','diaphragm', 'kidney cortex','gastroc','triceps',
         'apex','left ventricle','right ventricle','left atrium','right atrium','medial lobe', 'aorta',
         'rlung','llung','macrophage','tri','gast','gst','hrt','iWAT','thalamus','TSC','Cer','Ctx','Left Lateral Lobe',
-        'Right Lateral Lobe', 'Medial Lobe'
+        'Right Lateral Lobe', 'Medial Lobe','Teste','bone marrow','bone','quadriceps'
     }
 
 # ========================== UTILITY FUNCTIONS ==========================
@@ -207,23 +207,96 @@ def extract_dose_from_trigger_name(trigger_name: str) -> Optional[str]:
                 logger.debug(f"Extracted dose '{dose_value} mpk' from trigger name: '{trigger_name}'")
             return f"{dose_value} mpk"
     
-    # Look for other dose patterns (ug, mg, etc.)
-    dose_patterns = [
-        r'(\d+(?:\.\d+)?)\s*(ug|μg|mg|g)\b',  # Matches "250ug", "5mg", etc.
-        r'(\d+(?:\.\d+)?)\s*(ul|μl|ml|l)\b',  # Matches "250ul", "5ml", etc.
+    # Look for ug patterns specifically
+    ug_patterns = [
+        r'(\d+(?:\.\d+)?)\s*(ug|μg)\b',  # Matches "250ug", "5ug", etc.
     ]
     
-    for pattern in dose_patterns:
+    for pattern in ug_patterns:
         match = re.search(pattern, text)
         if match:
             dose_value = match.group(1)
             dose_unit = match.group(2)
-            extracted_dose = f"{dose_value} {dose_unit}"
+            extracted_dose = f"{dose_value} ug"
             if logger:
                 logger.debug(f"Extracted dose '{extracted_dose}' from trigger name: '{trigger_name}'")
             return extracted_dose
     
     return None
+
+def validate_and_standardize_dose(dose_str: str) -> Tuple[Optional[str], bool]:
+    """
+    Validate and standardize dose format. Allow common dose formats like ug, mpk, mg/kg, ml/kg.
+    Also allow multi-dose formats like "2x5mpk", "2 x 5 mpk".
+    Only flag truly problematic formats that need manual review.
+    
+    Args:
+        dose_str: Raw dose string from metadata
+        
+    Returns:
+        Tuple of (standardized_dose, is_flagged)
+        - standardized_dose: Clean dose in standard format or None
+        - is_flagged: True if dose format is problematic and needs review
+    """
+    if not dose_str or dose_str.strip() in ['', 'None', '--', 'n/a', 'N/A', 'NA']:
+        return None, False
+    
+    dose_clean = str(dose_str).strip()
+    
+    # Special case: "0" is a valid dose (zero dose/placebo)
+    if dose_clean == "0":
+        return "0", False
+    
+    # Check for valid/acceptable formats including multi-dose schedules
+    valid_patterns = [
+        r'^(\d+(?:\.\d+)?)\s*(ug|μg)$',              # "250 ug", "5ug"
+        r'^(\d+(?:\.\d+)?)\s*mpk$',                  # "5 mpk", "10mpk"
+        r'^(\d+(?:\.\d+)?)\s*mg/kg$',                # "3 mg/kg", "10 mg/kg"
+        r'^(\d+(?:\.\d+)?)\s*ml/kg$',                # "2 ml/kg", "5 ml/kg"
+        r'^(\d+(?:\.\d+)?)\s*mg$',                   # "5 mg", "250 mg"
+        r'^(\d+(?:\.\d+)?)\s*ml$',                   # "2 ml", "0.5 ml"
+        r'^(\d+(?:\.\d+)?)\s*ng/kg$',                # "500 ng/kg"
+        r'^(\d+(?:\.\d+)?)\s*ug/kg$',                # "100 ug/kg"
+        r'^(\d+)\s*x\s*(\d+(?:\.\d+)?)\s*mpk$',      # "2x5mpk", "2 x 5 mpk"
+        r'^(\d+)\s*x\s*(\d+(?:\.\d+)?)\s*mg/kg$',    # "2x10 mg/kg"
+        r'^(\d+)\s*x\s*(\d+(?:\.\d+)?)\s*(ug|μg)$',  # "2x250 ug"
+        r'^(\d+)\s*x\s*(\d+(?:\.\d+)?)\s*mg$',       # "2x5 mg"
+        r'^(\d+)\s*x\s*(\d+(?:\.\d+)?)\s*ml$',       # "2x1 ml"
+    ]
+    
+    for pattern in valid_patterns:
+        match = re.match(pattern, dose_clean.lower())
+        if match:
+            # For multi-dose formats, preserve the original format
+            if 'x' in pattern:
+                return dose_clean, False  # Keep original multi-dose format
+            else:
+                dose_value = match.group(1)
+                # Preserve the original unit format
+                unit_part = dose_clean[len(dose_value):].strip()
+                return f"{dose_value} {unit_part}", False
+    
+    # Flag only truly problematic formats that need review
+    problematic_patterns = [
+        r'^\d+$',           # Pure numbers without units (except "0" which we handle above)
+        r'[a-zA-Z]+\s*\d+', # Units before numbers like "mpk5"
+    ]
+    
+    for pattern in problematic_patterns:
+        if re.search(pattern, dose_clean.lower()):
+            if logger:
+                logger.warning(f"FLAGGED DOSE: '{dose_clean}' - needs manual review")
+            return dose_clean, True  # Return original but flag it
+    
+    # If it contains numbers and looks like a dose, accept it but don't flag
+    if re.search(r'\d', dose_clean):
+        # Contains numbers, probably a valid dose format we haven't seen before
+        return dose_clean, False
+    
+    # Unknown format without numbers - flag for review
+    if logger:
+        logger.warning(f"FLAGGED DOSE: '{dose_clean}' - unknown format")
+    return dose_clean, True
 
 def detect_dose_type(text: str) -> Optional[str]:
     """
@@ -481,8 +554,16 @@ class ExcelExtractor:
                     break
             else:
                 zero_count = 0
-                text_clean = str(cell_value).strip()
-                
+            text_clean = str(cell_value).strip()
+            
+            # Skip obviously invalid target names (Excel errors, pure numbers, etc.)
+            if (text_clean.startswith('#') or  # Excel errors like #DIV/0!
+                text_clean.replace('.', '').replace('-', '').isdigit() or  # Pure numbers like "1", "0.38"
+                len(text_clean) < 2):  # Too short to be meaningful
+                print(f"Skipping invalid target name: '{text_clean}'")
+                if logger:
+                    logger.debug(f"Skipped invalid target name: '{text_clean}'")
+            else:
                 # Classify as tissue or target (simplified - no more "both")
                 classification, tissue_name, target_name = classify_target_or_tissue(
                     text_clean, procedure_tissues
@@ -539,14 +620,40 @@ def extract_study_metadata(wb, folder_name: str) -> Dict[str, Any]:
     
     # Extract lists of data (tissues, triggers with doses)
     tissues = _extract_unique_tissues(ws)
-    triggers, doses = ExcelExtractor.extract_paired_columns(
+    
+    # Special handling for AAV studies - automatically set tissues to 'serum'
+    if study_name and "aav" in str(study_name).lower():
+        tissues = ['serum']
+        print(f"AAV study detected: '{study_name}' - automatically setting tissues to ['serum']")
+        if logger:
+            logger.info(f"AAV study detected: '{study_name}' - automatically setting tissues to ['serum']")
+    
+    raw_triggers, raw_doses = ExcelExtractor.extract_paired_columns(
         ws, Config.TRIGGERS_START_ROW, Config.TRIGGERS_COLUMN, Config.DOSES_COLUMN
     )
     
+    # Filter out invalid triggers from metadata but preserve valid biological controls
+    triggers, doses = [], []
+    for i, trigger in enumerate(raw_triggers):
+        trigger_str = str(trigger).strip()
+        
+        # Skip clearly invalid entries
+        if (trigger_str.lower() in ['x', 'n/a', 'blank', 'none', '--', '-', ''] or
+            trigger_str.startswith('#') or  # Excel error values
+            (trigger_str.replace('.', '').replace(',', '').isdigit() and len(trigger_str) <= 4)):  # Pure small numbers
+            if logger:
+                logger.debug(f"Filtered out invalid metadata trigger: '{trigger_str}'")
+            continue
+            
+        triggers.append(trigger_str)
+        doses.append(raw_doses[i] if i < len(raw_doses) else None)
+    
+    print(f"Filtered {len(raw_triggers) - len(triggers)} invalid triggers from metadata")
+    
     # Debug: Print extracted triggers
-    print(f"Extracted {len(triggers)} triggers from metadata:")
+    print(f"Extracted {len(triggers)} valid triggers from metadata:")
     if logger:
-        logger.info(f"Extracted {len(triggers)} triggers from metadata for {folder_name}")
+        logger.info(f"Extracted {len(triggers)} valid triggers from metadata for {folder_name} (filtered {len(raw_triggers) - len(triggers)} invalid)")
     for i, trigger in enumerate(triggers):
         dose = doses[i] if i < len(doses) else None
         print(f"  {i+1}: '{trigger}' -> dose: {dose}")
@@ -636,25 +743,33 @@ def _create_trigger_dose_map(triggers: List[str], doses: List[Any]) -> Dict[str,
         dose_str = str(dose) if dose is not None else ""
         detected_dose_type = detect_dose_type(dose_str)
         
-        # If no dose from metadata, try to extract from trigger name
-        final_dose = dose
-        if not dose or dose_str.strip() == "" or dose_str.lower() == "none":
+        # Validate and standardize the dose
+        standardized_dose, is_flagged = validate_and_standardize_dose(dose_str)
+        
+        # If no valid dose from metadata, try to extract from trigger name
+        final_dose = standardized_dose
+        if not standardized_dose:
             extracted_dose = extract_dose_from_trigger_name(trigger)
             if extracted_dose:
-                final_dose = extracted_dose
+                final_dose, is_flagged = validate_and_standardize_dose(extracted_dose)
                 if logger:
-                    logger.info(f"No metadata dose for trigger '{trigger}', using extracted dose: '{extracted_dose}'")
+                    logger.info(f"No metadata dose for trigger '{trigger}', using extracted dose: '{final_dose}'" + 
+                               (f" (FLAGGED)" if is_flagged else ""))
         
         trigger_dose_map[str(trigger)] = {
             "dose": final_dose,
-            "dose_type": detected_dose_type
+            "dose_type": detected_dose_type,
+            "dose_flagged": is_flagged  # NEW: Track if dose needs review
         }
+        
+        if is_flagged:
+            print(f"⚠️ DOSE FLAGGED for trigger '{trigger}': '{dose_str}' -> '{final_dose}'")
         
         if detected_dose_type:
             debug_print(f"Detected dose type '{detected_dose_type}' for trigger '{trigger}': {dose_str}")
         
         if logger:
-            logger.debug(f"Trigger dose mapping: '{trigger}' -> dose: '{final_dose}', type: '{detected_dose_type}'")
+            logger.debug(f"Trigger dose mapping: '{trigger}' -> dose: '{final_dose}', type: '{detected_dose_type}', flagged: {is_flagged}")
     
     return trigger_dose_map
 
@@ -859,20 +974,21 @@ def extract_relative_expression_data(wb, procedure_tissues: List[str] = None) ->
         
         for test_row in potential_target_rows:
             # Look for non-empty cells in the target columns that could be gene/target names
-            test_targets, test_columns, _, _, _ = ExcelExtractor.extract_targets_from_row(
+            test_targets, test_columns, _, test_tissue_names, test_tissue_columns = ExcelExtractor.extract_targets_from_row(
                 ws, test_row, procedure_tissues
             )
-            if test_targets:
+            # Accept the row if we find EITHER targets OR tissues
+            if test_targets or test_tissue_names:
                 target_row = test_row
-                print(f"Found targets in row {target_row}: {test_targets}")
+                print(f"Found data items in row {target_row}: targets={test_targets}, tissues={test_tissue_names}")
                 if logger:
-                    logger.info(f"Pattern detection found targets in row {target_row}: {test_targets}")
+                    logger.info(f"Pattern detection found data items in row {target_row}: targets={len(test_targets)}, tissues={len(test_tissue_names)}")
                 break
                 
         if target_row is None:
-            print(f"No target pattern found in calculation sheet {sheet_name}")
+            print(f"No target OR tissue pattern found in calculation sheet {sheet_name}")
             if logger:
-                logger.warning(f"No target pattern found in calculation sheet {sheet_name}")
+                logger.warning(f"No target OR tissue pattern found in calculation sheet {sheet_name}")
             return None
             
     else:
@@ -888,6 +1004,7 @@ def extract_relative_expression_data(wb, procedure_tissues: List[str] = None) ->
         
         rel_exp_row, _ = rel_exp_location
         target_row = rel_exp_row + 2
+    
     targets, target_columns, found_tissues, tissue_names_for_data, tissue_columns_for_data = ExcelExtractor.extract_targets_from_row(
         ws, target_row, procedure_tissues
     )
@@ -896,38 +1013,127 @@ def extract_relative_expression_data(wb, procedure_tissues: List[str] = None) ->
     all_data_names = targets + tissue_names_for_data
     all_data_columns = target_columns + tissue_columns_for_data
     
+    # Keep studies even if they only have targets OR only have tissues (be more inclusive)
     if not all_data_names:
-        print(f"No targets or tissues found for data extraction in row {target_row}")
+        print(f"No targets AND no tissues found for data extraction in row {target_row}")
+        if logger:
+            logger.warning(f"No targets AND no tissues found for data extraction in row {target_row}")
         return None
+    
+    # Log what we found
+    if targets and tissue_names_for_data:
+        print(f"Found both targets ({len(targets)}) and tissues ({len(tissue_names_for_data)}) for data extraction")
+    elif targets:
+        print(f"Found only targets ({len(targets)}) for data extraction - will leave tissue columns blank")
+    elif tissue_names_for_data:
+        print(f"Found only tissues ({len(tissue_names_for_data)}) for data extraction - will leave target columns blank")
+    
+    if logger:
+        logger.info(f"Data extraction plan: {len(targets)} gene targets, {len(tissue_names_for_data)} tissue targets, {len(all_data_names)} total items")
     
     # Extract trigger names - adjust based on sheet type
     if "calc" in sheet_name.lower():
         # For calc sheets, triggers are usually 1-2 rows below targets
         trigger_start_row = target_row + 1
         # First try 1 row below
-        triggers = ExcelExtractor.extract_column_values(
+        raw_triggers = ExcelExtractor.extract_column_values(
             ws, trigger_start_row, "B", stop_on_empty=False
         )[:Config.MAX_TRIGGERS]
         
         # If no triggers found, try 2 rows below
-        if not triggers or all(is_empty_or_zero(t) for t in triggers):
+        if not raw_triggers or all(is_empty_or_zero(t) for t in raw_triggers):
             trigger_start_row = target_row + 2
-            triggers = ExcelExtractor.extract_column_values(
+            raw_triggers = ExcelExtractor.extract_column_values(
                 ws, trigger_start_row, "B", stop_on_empty=False
             )[:Config.MAX_TRIGGERS]
             
         # If still no triggers, try 3 rows below
-        if not triggers or all(is_empty_or_zero(t) for t in triggers):
+        if not raw_triggers or all(is_empty_or_zero(t) for t in raw_triggers):
             trigger_start_row = target_row + 3
-            triggers = ExcelExtractor.extract_column_values(
+            raw_triggers = ExcelExtractor.extract_column_values(
                 ws, trigger_start_row, "B", stop_on_empty=False
             )[:Config.MAX_TRIGGERS]
     else:
         # For standard sheets, triggers are usually 3 rows below the header
         trigger_start_row = target_row + 3
-        triggers = ExcelExtractor.extract_column_values(
+        raw_triggers = ExcelExtractor.extract_column_values(
             ws, trigger_start_row, "B", stop_on_empty=False
         )[:Config.MAX_TRIGGERS]
+    
+    # Check if we're getting dose values instead of trigger names
+    if raw_triggers:
+        dose_like_count = 0
+        for trigger in raw_triggers[:5]:  # Check first 5 triggers
+            trigger_str = str(trigger).strip().lower()
+            # Check if it looks like a dose (contains mpk, ug, mg/kg, etc.)
+            if any(unit in trigger_str for unit in ['mpk', 'mg/kg', 'ml/kg', 'ug', 'mg', 'ml']):
+                dose_like_count += 1
+        
+        # If most triggers look like doses, we might be in the wrong location
+        if dose_like_count >= len(raw_triggers[:5]) * 0.6:  # 60% threshold
+            print(f"⚠️ Warning: Found dose-like values in trigger column: {raw_triggers[:3]}")
+            print(f"This suggests triggers might be in a different location or sheet format")
+            if logger:
+                logger.warning(f"Found dose-like values in trigger column: {raw_triggers[:3]} - possible wrong location")
+    
+    # Debug output for specific problematic study
+    if any('mAdi_110_HDAC11_1' in str(wb.path) for attr in ['path'] if hasattr(wb, attr)):
+        print(f"🔍 DEBUG - mAdi_110_HDAC11_1 trigger extraction:")
+        print(f"  Raw triggers found: {raw_triggers}")
+        print(f"  Target row: {target_row}, trigger start row: {trigger_start_row}")
+        print(f"  Sheet name: {sheet_name}")
+    
+    # Filter out invalid triggers but preserve valid biological controls
+    triggers = []
+    filtered_count = 0
+    for trigger in raw_triggers:
+        trigger_str = str(trigger).strip()
+        
+        # Enhanced filtering - but be more careful about compound codes
+        if (trigger_str.lower() in ['x', 'n/a', 'blank', 'none', '--', '-', ''] or
+            trigger_str.startswith('#')):  # Excel error values
+            if logger:
+                logger.debug(f"Filtered out invalid trigger: '{trigger_str}'")
+            filtered_count += 1
+            continue
+        
+        # Only filter obvious dose patterns, but preserve compound codes
+        is_dose_pattern = False
+        trigger_lower = trigger_str.lower()
+        
+        # Check for dose units
+        if any(unit in trigger_lower for unit in ['mpk', 'mg/kg', 'ml/kg', 'ug/kg']):
+            # But allow if it also contains letters that suggest it's a compound code
+            if not any(trigger_str.upper().startswith(prefix) for prefix in ['AC', 'AS', 'AR', 'AH']):
+                is_dose_pattern = True
+        
+        # Check for pure numbers that look like doses (but allow compound codes with numbers)
+        if (trigger_str.replace('.', '').replace(' ', '').isdigit() and 
+            len(trigger_str) <= 10 and 
+            not trigger_str.startswith(('AC', 'AS', 'AR', 'AH'))):
+            is_dose_pattern = True
+        
+        if is_dose_pattern:
+            if logger:
+                logger.debug(f"Filtered out dose-like trigger: '{trigger_str}'")
+            filtered_count += 1
+            continue
+            
+        triggers.append(trigger_str)
+    
+    if filtered_count > 0:
+        print(f"Filtered {filtered_count} invalid/dose-like triggers, kept {len(triggers)} triggers")
+        if logger:
+            logger.info(f"Filtered {filtered_count} invalid/dose-like triggers from {len(raw_triggers)} raw triggers, kept {len(triggers)} triggers")
+    
+    # If we don't have many triggers from results sheet, try to use metadata triggers instead
+    if len(triggers) < 3 and procedure_tissues:
+        print(f"⚠️ Only found {len(triggers)} triggers in results sheet, attempting to match with metadata triggers")
+        if logger:
+            logger.warning(f"Only found {len(triggers)} triggers in results sheet, attempting metadata matching")
+        
+        # This will be implemented in the calling function where we have access to metadata
+        # For now, continue with what we found
     
     print(f"Found targets: {targets}")
     print(f"Found tissues for data extraction: {tissue_names_for_data}")
@@ -957,7 +1163,9 @@ def extract_relative_expression_data(wb, procedure_tissues: List[str] = None) ->
         "tissue_targets": tissue_names_for_data,  # NEW: Tissues that have expression data
         "relative_expression_data": clean_triggers_data,
         "found_tissues": found_tissues,
-        "all_data_items": all_data_names  # NEW: Combined list of all items with data
+        "all_data_items": all_data_names,  # NEW: Combined list of all items with data
+        "trigger_start_row": trigger_start_row,  # NEW: For potential re-processing
+        "raw_triggers_found": raw_triggers  # NEW: For debugging
     }
 
 def _find_relative_expression_sheet(wb) -> Optional[str]:
@@ -1003,6 +1211,13 @@ def _extract_trigger_target_data(ws, triggers: List[str], targets: List[str],
     
     for trigger_idx, trigger in enumerate(triggers):
         if is_empty_or_zero(trigger):
+            continue
+        
+        # Additional safety check to filter out invalid triggers
+        trigger_str = str(trigger).strip()
+        if (trigger_str.lower() in ['x', 'n/a', 'blank', 'none', '--', '-', ''] or
+            trigger_str.startswith('#') or  # Excel error values
+            (trigger_str.replace('.', '').replace(',', '').isdigit() and len(trigger_str) <= 4)):  # Pure small numbers
             continue
             
         trigger_row = trigger_start_row + trigger_idx
@@ -1149,6 +1364,50 @@ def process_study_folder(study_folder: str) -> Optional[Dict[str, Any]]:
         )
         
         if rel_exp_data:
+            # Check if we got problematic triggers (dose-like values) and have metadata triggers available
+            results_triggers = list(rel_exp_data.get('relative_expression_data', {}).keys())
+            metadata_triggers = list(study_data.get('trigger_dose_map', {}).keys())
+            
+            print(f"🔄 Comparing trigger lists:")
+            print(f"  Metadata triggers ({len(metadata_triggers)}): {metadata_triggers}")
+            print(f"  Results triggers ({len(results_triggers)}): {results_triggers}")
+            
+            # NEW LOGIC: Use the trigger list that has more items (longer list)
+            if len(metadata_triggers) > len(results_triggers) and 'raw_triggers_found' in rel_exp_data:
+                print(f"🔄 Metadata has more triggers ({len(metadata_triggers)} vs {len(results_triggers)}), attempting to use metadata triggers...")
+                
+                if logger:
+                    logger.info(f"Using longer trigger list: metadata has {len(metadata_triggers)} vs results {len(results_triggers)}")
+                
+                # Try to re-extract with better trigger matching
+                enhanced_rel_exp_data = safe_workbook_operation(
+                    results_file,
+                    _extract_relative_expression_with_metadata_triggers,
+                    procedure_tissues,
+                    metadata_triggers,
+                    rel_exp_data.get('trigger_start_row'),
+                    rel_exp_data.get('targets', []),
+                    rel_exp_data.get('tissue_targets', [])
+                )
+                
+                if enhanced_rel_exp_data and len(enhanced_rel_exp_data.get('relative_expression_data', {})) > len(results_triggers):
+                    print(f"✅ Enhanced matching found {len(enhanced_rel_exp_data.get('relative_expression_data', {}))} triggers vs {len(results_triggers)} original")
+                    rel_exp_data = enhanced_rel_exp_data
+                    if logger:
+                        logger.info(f"Enhanced trigger matching successful: {len(enhanced_rel_exp_data.get('relative_expression_data', {}))} triggers found")
+                else:
+                    print(f"⚠️ Enhanced matching failed or didn't improve trigger count, keeping original results")
+                    if logger:
+                        logger.warning(f"Enhanced trigger matching failed to improve results")
+            elif len(results_triggers) >= len(metadata_triggers):
+                print(f"✅ Results triggers are equal or longer ({len(results_triggers)} vs {len(metadata_triggers)}), keeping results triggers")
+                if logger:
+                    logger.info(f"Keeping results triggers: {len(results_triggers)} vs metadata {len(metadata_triggers)}")
+            else:
+                print(f"⚠️ No enhanced matching attempted (no raw triggers data available)")
+                if logger:
+                    logger.warning(f"Enhanced matching not available (missing raw_triggers_found)")
+            
             study_data["relative_expression"] = rel_exp_data
             print(f"Extracted relative expression data:")
             print(f"  - Targets: {len(rel_exp_data.get('targets', []))} targets")
@@ -1430,17 +1689,20 @@ def _create_csv_row(study_info: Dict[str, Any], trigger: str, trigger_info: Dict
     """
     Create a single CSV row for one trigger-target combination.
     
+    NEW LOGIC: If item is a tissue_target, put it in tissue column and leave gene_target empty.
+               If item is a gene_target, put it in gene_target column and use study tissue.
+    
     CSV columns (in order):
     1. study_name: Name of the study
     2. study_code: 10-digit code (quoted to prevent Excel issues)
     3. screening_model: Type of screening used
-    4. gene_target: Name of the target gene or tissue
+    4. gene_target: Name of the target gene (empty if tissue_target)
     5. item_type: Type of item (gene_target or tissue_target)
     6. trigger: Name of the trigger (e.g., siRNA sequence)
     7. dose: Dose amount for this trigger
     8. dose_type: Detected dose type (SQ, IV, IM, Intratracheal)
     9. timepoint: Time point of measurement (e.g., D14)
-    10. tissue: Tissue type tested
+    10. tissue: Tissue type (from study metadata OR the tissue_target name)
     11. avg_rel_exp: Average relative expression value
     12. avg_rel_exp_lsd: Lower standard deviation
     13. avg_rel_exp_hsd: Higher standard deviation
@@ -1456,18 +1718,34 @@ def _create_csv_row(study_info: Dict[str, Any], trigger: str, trigger_info: Dict
         rel_exp = values.get("rel_exp")
         low = values.get("low")
         high = values.get("high")
+    
+    # NEW LOGIC: Proper tissue vs target placement
+    if item_type == "tissue_target":
+        # If this is a tissue target, put it in tissue column, leave gene_target empty
+        gene_target_col = ""
+        tissue_col = target  # The tissue name from results file
+    else:
+        # If this is a gene target, put it in gene_target column, use study tissue
+        gene_target_col = target
+        tissue_col = study_info["tissue"]  # Use tissue from study metadata
+    
+    # Flag if both columns would be empty (shouldn't happen but safety check)
+    if not gene_target_col and not tissue_col:
+        print(f"⚠️ WARNING: Both gene_target and tissue columns empty for {target} ({item_type})")
+        if logger:
+            logger.warning(f"Both gene_target and tissue columns empty for {target} ({item_type})")
         
     return [
         study_info["study_name"],
         study_info["study_code"],
         study_info["screening_model"],
-        target,                                # gene_target (now used for both genes and tissues)
+        gene_target_col,                       # gene_target (empty for tissue_targets)
         item_type,                             # item_type (gene_target or tissue_target)
         trigger,                               # trigger (from metadata)
         str(trigger_info.get("dose", "")),     # dose (from metadata)
         str(trigger_info.get("dose_type", "")), # dose_type (detected)
         study_info["timepoint"],
-        study_info["tissue"],
+        tissue_col,                            # tissue (study tissue OR tissue_target name)
         convert_to_numeric(rel_exp),           # avg_rel_exp 
         convert_to_numeric(low),               # avg_rel_exp_lsd
         convert_to_numeric(high)               # avg_rel_exp_hsd
@@ -1653,6 +1931,137 @@ def _create_final_summary_report(processing_stats: Dict[str, Any], all_study_dat
         logger.info(f"  {study_name} ({study_code}): {status_str}")
     
     logger.info("="*80)
+
+def _extract_relative_expression_with_metadata_triggers(wb, procedure_tissues: List[str], 
+                                                     metadata_triggers: List[str], 
+                                                     trigger_start_row: int,
+                                                     existing_targets: List[str],
+                                                     existing_tissue_targets: List[str]) -> Optional[Dict[str, Any]]:
+    """
+    Enhanced relative expression extraction that uses metadata triggers to match with results data.
+    NEW APPROACH: Use positional mapping when name matching fails - map metadata triggers 
+    sequentially to data rows that have actual expression values.
+    
+    Args:
+        wb: Excel workbook object
+        procedure_tissues: List of tissues from procedure sheet
+        metadata_triggers: List of trigger names from metadata (info file)
+        trigger_start_row: Row where trigger data starts in results sheet
+        existing_targets: Already found gene targets
+        existing_tissue_targets: Already found tissue targets
+        
+    Returns:
+        Dictionary with enhanced trigger matching or None if failed
+    """
+    if logger:
+        logger.info(f"Enhanced trigger matching: using {len(metadata_triggers)} metadata triggers")
+    
+    sheet_name = _find_relative_expression_sheet(wb)
+    if not sheet_name:
+        return None
+    
+    ws = wb[sheet_name]
+    
+    # Use existing target information
+    all_data_names = existing_targets + existing_tissue_targets
+    
+    # Find target columns again (we need this for data extraction)
+    target_columns = []
+    tissue_columns_for_data = []
+    col_start = Config.TARGET_START_COLUMN
+    
+    for i in range(len(existing_targets)):
+        target_columns.append(col_start)
+        col_start += Config.TARGET_COLUMN_SPACING
+        
+    for i in range(len(existing_tissue_targets)):
+        tissue_columns_for_data.append(col_start)
+        col_start += Config.TARGET_COLUMN_SPACING
+    
+    all_data_columns = target_columns + tissue_columns_for_data
+    
+    # Extract all data rows that have actual expression values
+    data_rows_with_values = []
+    max_trigger_rows = min(len(metadata_triggers) + 10, Config.MAX_TRIGGERS)  # Check more rows
+    
+    for row_offset in range(max_trigger_rows):
+        row = trigger_start_row + row_offset
+        if row > ws.max_row:
+            break
+            
+        # Check if this row has any actual data values
+        has_data = False
+        data_values = []
+        
+        for col in all_data_columns:
+            values = {
+                "rel_exp": ws.cell(row=row, column=col + 1).value,
+                "low": ws.cell(row=row, column=col + 2).value,
+                "high": ws.cell(row=row, column=col + 3).value
+            }
+            data_values.append(values)
+            
+            # Check if this column has any non-null data
+            if not all(v is None for v in values.values()):
+                has_data = True
+        
+        if has_data:
+            row_data = {
+                'row': row,
+                'trigger_cell': ws.cell(row=row, column=2).value,  # Column B
+                'data_values': data_values
+            }
+            data_rows_with_values.append(row_data)
+    
+    print(f"  Found {len(data_rows_with_values)} data rows with actual expression values")
+    if logger:
+        logger.debug(f"Found {len(data_rows_with_values)} data rows with expression values for trigger matching")
+    
+    # NEW STRATEGY: Use positional mapping - map metadata triggers to data rows sequentially
+    triggers_data = {}
+    mapped_count = 0
+    
+    # Map metadata triggers to data rows (one-to-one up to the number of available data rows)
+    for i, meta_trigger in enumerate(metadata_triggers):
+        if i < len(data_rows_with_values):
+            row_data = data_rows_with_values[i]
+            trigger_data = {}
+            
+            # Extract data for all targets/tissues
+            for j, target_name in enumerate(all_data_names):
+                if j < len(row_data['data_values']):
+                    values = row_data['data_values'][j]
+                    
+                    # Only include if there's actual data
+                    if not all(v is None for v in values.values()):
+                        trigger_data[target_name] = values
+            
+            if trigger_data:  # Only add if we found data
+                triggers_data[meta_trigger] = trigger_data
+                mapped_count += 1
+                
+                trigger_cell_value = str(row_data['trigger_cell'] or '').strip()
+                print(f"  Mapped metadata trigger '{meta_trigger}' to row {row_data['row']} (results cell: '{trigger_cell_value}')")
+                if logger:
+                    logger.debug(f"Positionally mapped metadata trigger '{meta_trigger}' to row {row_data['row']} (results cell: '{trigger_cell_value}')")
+    
+    print(f"  Successfully mapped {mapped_count}/{len(metadata_triggers)} metadata triggers to data rows")
+    if logger:
+        logger.info(f"Positional mapping result: {mapped_count}/{len(metadata_triggers)} triggers mapped")
+    
+    # Accept any positive mapping result when using the longer list strategy
+    if mapped_count > 0:
+        return {
+            "targets": existing_targets,
+            "tissue_targets": existing_tissue_targets,
+            "relative_expression_data": triggers_data,
+            "found_tissues": [],  # Keep empty since we're reusing existing data
+            "all_data_items": all_data_names,
+            "enhanced_matching": True,  # Flag to indicate this used enhanced matching
+            "positional_mapping": True  # Flag to indicate positional mapping was used
+        }
+    
+    return None
 
 if __name__ == "__main__":
     main()
