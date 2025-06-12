@@ -22,6 +22,7 @@ This project processes Excel files containing biological study data, specificall
 - **Column spacing**: Targets are typically spaced 4 columns apart (F, J, N, R, etc.)
 - **Empty cell tolerance**: Stop after 5 consecutive empty cells to avoid infinite loops
 - **Read-only mode**: Use read-only mode by default unless explicitly writing to files
+- **Trigger filtering**: Filter out invalid triggers like 'x', Excel errors, pure numbers, and concentration-only values. KEEP valid controls like 'aCSF', 'saline', 'vehicle' - these are legitimate biological controls
 
 ### 3. Data Structure Consistency
 - **Nested dictionaries**: Use structure `{trigger: {target/tissue: {rel_exp, low, high}}}`

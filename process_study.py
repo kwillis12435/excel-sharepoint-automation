@@ -109,7 +109,8 @@ class Config:
         'gastrocnemius', 'tibialis anterior', 'retina', 'optic nerve','adrenal gland',
         'sciatic nerve','striatum','lymph node','diaphragm', 'kidney cortex','gastroc','triceps',
         'apex','left ventricle','right ventricle','left atrium','right atrium','medial lobe', 'aorta',
-        'rlung','llung','macrophage','tri','gast','gst','hrt','iWAT'
+        'rlung','llung','macrophage','tri','gast','gst','hrt','iWAT','thalamus','TSC','Cer','Ctx','Left Lateral Lobe',
+        'Right Lateral Lobe', 'Medial Lobe'
     }
 
 # ========================== UTILITY FUNCTIONS ==========================
@@ -137,7 +138,7 @@ def is_empty_or_zero(value: Any) -> bool:
     if isinstance(value, str) and not value.strip():
         return True
     if value == 0 or str(value).strip() == "0":
-        return True
+        return True  
     return False
 
 def normalize_string(text: str) -> str:
@@ -269,8 +270,8 @@ def is_tissue_name(text: str) -> bool:
 def classify_target_or_tissue(text: str, procedure_tissues: List[str]) -> Tuple[str, Optional[str], Optional[str]]:
     """
     Classify a text string as either a tissue or gene target.
-    Now also checks if individual words within the text are tissue names.
-    If tissue words are found, they are extracted and the remaining words form the gene target.
+    Simple rule: If it's a tissue, keep it as tissue. If it's a target, keep it as target.
+    No more complex splitting - one item = one classification.
     """
     if not text:
         return 'target', None, None
@@ -285,88 +286,33 @@ def classify_target_or_tissue(text: str, procedure_tissues: List[str]) -> Tuple[
     if is_tissue_name(text_clean):
         return 'tissue', text_clean, None
     
-    # NEW: Check if any words or phrases in the text are tissue names
+    # Check if any words in the text are tissue names (but keep the whole thing as tissue)
     words = text_clean.split()
     if len(words) > 1:  # Only check multi-word strings
-        tissue_words = []
-        remaining_words = words.copy()
-        
-        # Debug output
-        if Config.DEBUG:
-            print(f"    Analyzing multi-word text: '{text_clean}' -> words: {words}")
-        
-        # First, check for multi-word tissue names (longest matches first)
-        # Sort tissue types by length (descending) to match longer phrases first
+        # Check for multi-word tissue names first
         all_tissue_types = list(Config.TISSUE_TYPES) + procedure_tissues
         sorted_tissues = sorted(all_tissue_types, key=len, reverse=True)
         
         for tissue_type in sorted_tissues:
-            tissue_words_list = tissue_type.lower().split()
-            if len(tissue_words_list) > 1:  # Multi-word tissue
-                # Check if this multi-word tissue appears as a consecutive phrase in our text
-                text_lower = ' '.join([w.lower() for w in remaining_words])
-                if tissue_type.lower() in text_lower:
-                    # Find the start position of this tissue phrase
-                    remaining_words_lower = [w.lower() for w in remaining_words]
-                    try:
-                        # Look for the tissue phrase as consecutive words
-                        for start_idx in range(len(remaining_words) - len(tissue_words_list) + 1):
-                            if remaining_words_lower[start_idx:start_idx + len(tissue_words_list)] == tissue_words_list:
-                                # Found the tissue phrase - extract with original case
-                                found_tissue_words = remaining_words[start_idx:start_idx + len(tissue_words_list)]
-                                tissue_words.extend(found_tissue_words)
-                                
-                                if Config.DEBUG:
-                                    print(f"    Found multi-word tissue: '{' '.join(found_tissue_words)}' from '{tissue_type}'")
-                                
-                                # Remove these words from remaining_words
-                                remaining_words = (remaining_words[:start_idx] + 
-                                                 remaining_words[start_idx + len(tissue_words_list):])
-                                break
-                    except (IndexError, ValueError):
-                        continue
+            if tissue_type.lower() in text_clean.lower():
+                if Config.DEBUG:
+                    print(f"    Found tissue phrase '{tissue_type}' in '{text_clean}' - treating whole thing as tissue")
+                return 'tissue', text_clean, None
         
-        # Then check individual words that weren't part of multi-word tissues
-        additional_tissue_words = []
-        final_remaining_words = []
-        
-        for word in remaining_words:
+        # Check individual words for tissue matches
+        for word in words:
             word_clean = word.strip()
-            # Check if this individual word is a tissue
             if is_tissue_name(word_clean):
-                additional_tissue_words.append(word_clean)
                 if Config.DEBUG:
-                    print(f"    Found individual tissue word: '{word_clean}'")
-            else:
-                # Also check against procedure tissues
-                is_proc_tissue = False
-                for proc_tissue in procedure_tissues:
-                    if normalize_string(word_clean) == normalize_string(proc_tissue):
-                        additional_tissue_words.append(word_clean)
-                        is_proc_tissue = True
-                        if Config.DEBUG:
-                            print(f"    Found procedure tissue word: '{word_clean}'")
-                        break
-                if not is_proc_tissue:
-                    final_remaining_words.append(word_clean)
-        
-        # Combine all tissue words
-        all_tissue_words = tissue_words + additional_tissue_words
-        
-        # If we found tissue words, extract them
-        if all_tissue_words:
-            tissue_name = ' '.join(all_tissue_words)
-            if final_remaining_words:
-                # Return both tissue and remaining target
-                target_name = ' '.join(final_remaining_words)
-                if Config.DEBUG:
-                    print(f"    Result: BOTH - tissue: '{tissue_name}', target: '{target_name}'")
-                return 'both', tissue_name, target_name
-            else:
-                # All words were tissues
-                if Config.DEBUG:
-                    print(f"    Result: TISSUE - '{tissue_name}'")
-                return 'tissue', tissue_name, None
+                    print(f"    Found tissue word '{word_clean}' in '{text_clean}' - treating whole thing as tissue")
+                return 'tissue', text_clean, None
+            
+            # Also check against procedure tissues
+            for proc_tissue in procedure_tissues:
+                if normalize_string(word_clean) == normalize_string(proc_tissue):
+                    if Config.DEBUG:
+                        print(f"    Found procedure tissue word '{word_clean}' in '{text_clean}' - treating whole thing as tissue")
+                    return 'tissue', text_clean, None
     
     # Otherwise, treat as gene target
     if Config.DEBUG:
@@ -537,7 +483,7 @@ class ExcelExtractor:
                 zero_count = 0
                 text_clean = str(cell_value).strip()
                 
-                # Classify as tissue or target
+                # Classify as tissue or target (simplified - no more "both")
                 classification, tissue_name, target_name = classify_target_or_tissue(
                     text_clean, procedure_tissues
                 )
@@ -547,20 +493,12 @@ class ExcelExtractor:
                 
                 if classification == 'tissue':
                     found_tissues.append(tissue_name)
-                    # NEW: Also add to data extraction lists
+                    # Also add to data extraction lists
                     tissue_names_for_data.append(tissue_name)
                     tissue_columns_for_data.append(col_start)
                     if logger:
                         logger.debug(f"  Added to tissues: '{tissue_name}' (will extract data)")
-                elif classification == 'both':
-                    # Handle case where cell contains both tissue and target words
-                    found_tissues.append(tissue_name)
-                    targets.append(target_name)
-                    target_columns.append(col_start)
-                    print(f"  Extracted tissue: '{tissue_name}', remaining target: '{target_name}'")
-                    if logger:
-                        logger.info(f"  Split cell '{text_clean}' -> tissue: '{tissue_name}', target: '{target_name}'")
-                else:
+                else:  # target
                     targets.append(target_name)
                     target_columns.append(col_start)
                     if logger:
@@ -905,18 +843,51 @@ def extract_relative_expression_data(wb, procedure_tissues: List[str] = None) ->
     if logger:
         logger.info(f"Using sheet: '{sheet_name}' for relative expression data")
     
-    # Find the "Relative Expression by Groups" section header
-    rel_exp_location = ExcelExtractor.find_cell_with_text(
-        ws, "relative expression", Config.REL_EXP_SEARCH_ROWS
-    )
-    if not rel_exp_location:
-        print(f"Relative Expression section not found in sheet {sheet_name}")
-        return None
+    # Find the data section - handle both standard and calculation sheets
+    rel_exp_location = None
+    target_row = None
     
-    rel_exp_row, _ = rel_exp_location
-    
-    # Extract target gene names and tissue names (usually 2 rows below the header)
-    target_row = rel_exp_row + 2
+    # For "Calcs" sheets, try pattern-based detection instead of header search
+    if "calc" in sheet_name.lower():
+        print(f"Detected calculation sheet - using pattern-based target detection")
+        if logger:
+            logger.info(f"Detected calculation sheet '{sheet_name}' - using pattern-based detection")
+        
+        # For calc sheets, look for the pattern of target names in specific rows
+        # Try common target row locations for calc sheets
+        potential_target_rows = [15, 16, 17, 18, 19, 20, 25, 30]
+        
+        for test_row in potential_target_rows:
+            # Look for non-empty cells in the target columns that could be gene/target names
+            test_targets, test_columns, _, _, _ = ExcelExtractor.extract_targets_from_row(
+                ws, test_row, procedure_tissues
+            )
+            if test_targets:
+                target_row = test_row
+                print(f"Found targets in row {target_row}: {test_targets}")
+                if logger:
+                    logger.info(f"Pattern detection found targets in row {target_row}: {test_targets}")
+                break
+                
+        if target_row is None:
+            print(f"No target pattern found in calculation sheet {sheet_name}")
+            if logger:
+                logger.warning(f"No target pattern found in calculation sheet {sheet_name}")
+            return None
+            
+    else:
+        # For standard sheets, use header search
+        rel_exp_location = ExcelExtractor.find_cell_with_text(
+            ws, "relative expression", Config.REL_EXP_SEARCH_ROWS
+        )
+        if not rel_exp_location:
+            print(f"Relative Expression section not found in sheet {sheet_name}")
+            if logger:
+                logger.warning(f"Relative Expression section not found in sheet {sheet_name}")
+            return None
+        
+        rel_exp_row, _ = rel_exp_location
+        target_row = rel_exp_row + 2
     targets, target_columns, found_tissues, tissue_names_for_data, tissue_columns_for_data = ExcelExtractor.extract_targets_from_row(
         ws, target_row, procedure_tissues
     )
@@ -929,11 +900,34 @@ def extract_relative_expression_data(wb, procedure_tissues: List[str] = None) ->
         print(f"No targets or tissues found for data extraction in row {target_row}")
         return None
     
-    # Extract trigger names (usually 3 rows below the header, in column B)
-    trigger_start_row = target_row + 3
-    triggers = ExcelExtractor.extract_column_values(
-        ws, trigger_start_row, "B", stop_on_empty=False
-    )[:Config.MAX_TRIGGERS]
+    # Extract trigger names - adjust based on sheet type
+    if "calc" in sheet_name.lower():
+        # For calc sheets, triggers are usually 1-2 rows below targets
+        trigger_start_row = target_row + 1
+        # First try 1 row below
+        triggers = ExcelExtractor.extract_column_values(
+            ws, trigger_start_row, "B", stop_on_empty=False
+        )[:Config.MAX_TRIGGERS]
+        
+        # If no triggers found, try 2 rows below
+        if not triggers or all(is_empty_or_zero(t) for t in triggers):
+            trigger_start_row = target_row + 2
+            triggers = ExcelExtractor.extract_column_values(
+                ws, trigger_start_row, "B", stop_on_empty=False
+            )[:Config.MAX_TRIGGERS]
+            
+        # If still no triggers, try 3 rows below
+        if not triggers or all(is_empty_or_zero(t) for t in triggers):
+            trigger_start_row = target_row + 3
+            triggers = ExcelExtractor.extract_column_values(
+                ws, trigger_start_row, "B", stop_on_empty=False
+            )[:Config.MAX_TRIGGERS]
+    else:
+        # For standard sheets, triggers are usually 3 rows below the header
+        trigger_start_row = target_row + 3
+        triggers = ExcelExtractor.extract_column_values(
+            ws, trigger_start_row, "B", stop_on_empty=False
+        )[:Config.MAX_TRIGGERS]
     
     print(f"Found targets: {targets}")
     print(f"Found tissues for data extraction: {tissue_names_for_data}")
