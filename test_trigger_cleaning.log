@@ -1,0 +1,14 @@
+2025-06-12 18:30:29 - DEBUG - extract_dose_from_trigger_name:319 - Extracted dose '5 ug' from trigger name: 'HDM 5ug'
+2025-06-12 18:30:29 - DEBUG - clean_trigger_name:2413 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM' (extracted dose: '5 ug')
+2025-06-12 18:30:29 - DEBUG - clean_trigger_name:2413 - Cleaned trigger name: '200uL  Saline NA (D1, 3)' -> 'Saline'
+2025-06-12 18:30:29 - DEBUG - extract_dose_from_trigger_name:304 - Extracted dose '5 mpk' from trigger name: 'AC005120 2x5mpk'
+2025-06-12 18:30:29 - DEBUG - clean_trigger_name:2413 - Cleaned trigger name: 'AC005120 2x5mpk (D1, 3)' -> 'AC005120' (extracted dose: '5 mpk')
+2025-06-12 18:30:29 - DEBUG - clean_trigger_name:2413 - Cleaned trigger name: 'AC005120 2x5mpk (D1, 3)' -> 'AC005120'
+2025-06-12 18:30:29 - DEBUG - clean_trigger_name:2413 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM'
+2025-06-12 18:30:29 - DEBUG - clean_trigger_name:2343 - Filtered out corrupted trigger name: 'AC006365 4 x'
+2025-06-12 18:30:29 - DEBUG - clean_trigger_name:2343 - Filtered out corrupted trigger name: 'AC007163/kg'
+2025-06-12 18:30:29 - DEBUG - clean_trigger_name:2343 - Filtered out corrupted trigger name: 'B-hIL11/hIL11RA/mL'
+2025-06-12 18:30:29 - DEBUG - clean_trigger_name:2343 - Filtered out corrupted trigger name: '4 x'
+2025-06-12 18:30:29 - DEBUG - clean_trigger_name:2343 - Filtered out corrupted trigger name: '/kg'
+2025-06-12 18:30:29 - DEBUG - clean_trigger_name:2343 - Filtered out corrupted trigger name: '/mL'
+2025-06-12 18:30:29 - DEBUG - clean_trigger_name:2343 - Filtered out corrupted trigger name: '123'

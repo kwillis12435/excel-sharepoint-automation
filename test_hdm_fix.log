@@ -1,0 +1,181 @@
+2025-06-12 17:31:34 - INFO - load_known_targets:177 - Loaded 0 target names and aliases from alltargets.csv
+2025-06-12 17:31:34 - INFO - process_study_folder:1510 - Starting processing of study: 2024010303 (rHDM_Pilot_2)
+2025-06-12 17:31:34 - DEBUG - process_study_folder:1511 - Study folder path: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010303 (rHDM_Pilot_2)
+2025-06-12 17:31:34 - DEBUG - process_study_folder:1512 - Expected info file: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010303 (rHDM_Pilot_2)\2024010303 (rHDM_Pilot_2).xlsm
+2025-06-12 17:31:34 - DEBUG - process_study_folder:1513 - Expected results folder: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010303 (rHDM_Pilot_2)\Results
+2025-06-12 17:31:34 - DEBUG - process_study_folder:1520 - Found info file: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010303 (rHDM_Pilot_2)\2024010303 (rHDM_Pilot_2).xlsm
+2025-06-12 17:31:34 - DEBUG - safe_workbook_operation:514 - Opening workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010303 (rHDM_Pilot_2)\2024010303 (rHDM_Pilot_2).xlsm (read_only=True, data_only=True)
+2025-06-12 17:31:34 - INFO - extract_study_metadata:711 - Extracting metadata for study: 2024010303 (rHDM_Pilot_2)
+2025-06-12 17:31:34 - DEBUG - extract_study_metadata:712 - Available sheets: ['Procedure Request Form', 'Dose Calculations', 'Animal Receipt', 'Dose Admin - CNS', 'Tissue Weights', 'Dose Admin - IT', 'Dose Admin - Inhalation', 'Body Weights', 'Blood', 'Inj Record - HDM_D1,D3', 'Inj Record - Trigger - SD', 'Inj Record - Other', 'Inj Record - Other - SD', 'BW and Grouping', 'Harvest', 'Treatment', 'Unscheduled', 'Study Deviations', 'Medical Records', 'Drawing', 'TW-1.5mLEPAliquot tubes-Top', 'TW-15mL Conical', 'TW-7mL Precellys Tube', 'TW-15mL Precellys Tube', 'TW Formulas', 'FOB Tabulation', 'Plasmid Dosing Prep', 'AAV8 Dosing Prep', 'Dropdown', 'Plate Map', 'Dosing-Virology', 'Dose Administration - ADME PK', 'Urine Collection - ADME PK', 'Blood Collection - ADME PK', 'CSF Collection', 'IOPs -Ocular', 'Dose Administration - Ocular', 'Mouse Anesthesia - Ocular', 'Euthanasia (Rabbits) - Ocular', 'Imaging Obs - Ocular', 'Rat Anesthesia - Ocular', 'BW-Obs Ocular', 'Group Description', 'TW-1.5mL EP AliqTubes-SidePort', 'TW-1.5mL EP AliqTubes-SideP 2']
+2025-06-12 17:31:34 - INFO - extract_study_metadata:761 - Extracted 5 valid triggers from metadata for 2024010303 (rHDM_Pilot_2) (filtered 0 invalid)
+2025-06-12 17:31:34 - DEBUG - extract_study_metadata:766 -   Trigger 1: 'Saline' -> dose: None
+2025-06-12 17:31:34 - DEBUG - extract_study_metadata:766 -   Trigger 2: 'HDM' -> dose: 5ug
+2025-06-12 17:31:34 - DEBUG - extract_study_metadata:766 -   Trigger 3: 'HDM' -> dose: 5ug
+2025-06-12 17:31:34 - DEBUG - extract_study_metadata:766 -   Trigger 4: 'HDM' -> dose: 5ug
+2025-06-12 17:31:34 - DEBUG - extract_study_metadata:766 -   Trigger 5: 'HDM' -> dose: 5ug
+2025-06-12 17:31:34 - DEBUG - _create_trigger_dose_map:894 - Trigger dose mapping: 'Saline' (original: 'Saline') -> dose: 'None', type: 'None', flagged: False
+2025-06-12 17:31:34 - DEBUG - _create_trigger_dose_map:894 - Trigger dose mapping: 'HDM' (original: 'HDM') -> dose: '5 ug', type: 'None', flagged: False
+2025-06-12 17:31:34 - DEBUG - _create_trigger_dose_map:875 - Duplicate trigger in metadata: 'HDM' -> using key 'HDM_#2'
+2025-06-12 17:31:34 - DEBUG - _create_trigger_dose_map:894 - Trigger dose mapping: 'HDM_#2' (original: 'HDM') -> dose: '5 ug', type: 'None', flagged: False
+2025-06-12 17:31:34 - DEBUG - _create_trigger_dose_map:875 - Duplicate trigger in metadata: 'HDM' -> using key 'HDM_#3'
+2025-06-12 17:31:34 - DEBUG - _create_trigger_dose_map:894 - Trigger dose mapping: 'HDM_#3' (original: 'HDM') -> dose: '5 ug', type: 'None', flagged: False
+2025-06-12 17:31:34 - DEBUG - _create_trigger_dose_map:875 - Duplicate trigger in metadata: 'HDM' -> using key 'HDM_#4'
+2025-06-12 17:31:34 - DEBUG - _create_trigger_dose_map:894 - Trigger dose mapping: 'HDM_#4' (original: 'HDM') -> dose: '5 ug', type: 'None', flagged: False
+2025-06-12 17:31:34 - INFO - _create_trigger_dose_map:898 - Metadata trigger name distribution: {'Saline': 1, 'HDM': 4}
+2025-06-12 17:31:35 - DEBUG - safe_workbook_operation:521 - Successfully processed workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010303 (rHDM_Pilot_2)\2024010303 (rHDM_Pilot_2).xlsm
+2025-06-12 17:31:35 - INFO - process_study_folder:1526 - Successfully extracted metadata for 2024010303 (rHDM_Pilot_2)
+2025-06-12 17:31:35 - DEBUG - process_study_folder:1530 -   Metadata study_name: rHDM_Pilot_2
+2025-06-12 17:31:35 - DEBUG - process_study_folder:1530 -   Metadata study_code: 2024010303
+2025-06-12 17:31:35 - DEBUG - process_study_folder:1530 -   Metadata screening_model: Rat
+2025-06-12 17:31:35 - DEBUG - process_study_folder:1530 -   Metadata tissues: ['BALF', 'Accessory lobe', 'Lung - Remaining Right Lobes', 'Lung - Left Lobe']
+2025-06-12 17:31:35 - DEBUG - process_study_folder:1530 -   Metadata trigger_dose_map: {'Saline': {'dose': None, 'dose_type': None, 'dose_flagged': False, 'original_name': 'Saline'}, 'HDM': {'dose': '5 ug', 'dose_type': None, 'dose_flagged': False, 'original_name': 'HDM'}, 'HDM_#2': {'dose': '5 ug', 'dose_type': None, 'dose_flagged': False, 'original_name': 'HDM'}, 'HDM_#3': {'dose': '5 ug', 'dose_type': None, 'dose_flagged': False, 'original_name': 'HDM'}, 'HDM_#4': {'dose': '5 ug', 'dose_type': None, 'dose_flagged': False, 'original_name': 'HDM'}}
+2025-06-12 17:31:35 - DEBUG - process_study_folder:1530 -   Metadata timepoint: D23
+2025-06-12 17:31:35 - DEBUG - process_study_folder:1543 - Found results file: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010303 (rHDM_Pilot_2)\Results\2024JAN26 END 2024010303_rHDM_Pilot_2_DDCt Excel macro_BioMek_v45_Test.xlsm
+2025-06-12 17:31:35 - DEBUG - safe_workbook_operation:514 - Opening workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010303 (rHDM_Pilot_2)\Results\2024JAN26 END 2024010303_rHDM_Pilot_2_DDCt Excel macro_BioMek_v45_Test.xlsm (read_only=True, data_only=True)
+2025-06-12 17:31:35 - INFO - extract_relative_expression_data:1073 - Extracting relative expression data
+2025-06-12 17:31:35 - DEBUG - extract_relative_expression_data:1074 - Available sheets: ['LAR Sheet(s)', 'Isolation Protocol', 'RNA Quant-It Data', 'BioMek CSV', 'MultiFlo CSV', 'Span8 CSV', 'cDNA and qPCR Setup (A)', 'cDNA & qPCR Setup (M)', 'Plate Setup', 'AmpPlots', 'RawData', 'Rel Exp-Target1', 'Rel Exp-Target2', 'Rel Exp-Target3', 'Rel Exp-Target4', 'Rel Exp-Target5', 'Rel Exp-Target6', 'Rel Exp-Target7', 'Rel Exp-Target8', 'Rel Exp-Target9', 'Rel Exp-Target10', 'Rel Exp-Target11', 'Rel Exp-Target12', 'Rel Exp-Target13', 'Rel Exp-Target14', 'Rel Exp-Target15', 'Rel Exp-Target16', 'Rel Exp-Target17', 'Rel Exp-Target18', 'Compiled Indiv. & Grp.', 'Graphs', 'Trigger Diagrams', 'Input']
+2025-06-12 17:31:35 - INFO - extract_relative_expression_data:1085 - Using sheet: 'Compiled Indiv. & Grp.' for relative expression data
+2025-06-12 17:31:45 - DEBUG - extract_targets_from_row:678 - Target row cell 'rIL13': classified as target
+2025-06-12 17:31:45 - DEBUG - extract_targets_from_row:691 -   Added to targets: 'rIL13'
+2025-06-12 17:31:45 - DEBUG - extract_targets_from_row:678 - Target row cell 'rIL33': classified as target
+2025-06-12 17:31:45 - DEBUG - extract_targets_from_row:691 -   Added to targets: 'rIL33'
+2025-06-12 17:31:45 - DEBUG - extract_targets_from_row:678 - Target row cell 'rTSLP': classified as target
+2025-06-12 17:31:45 - DEBUG - extract_targets_from_row:691 -   Added to targets: 'rTSLP'
+2025-06-12 17:31:45 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 17:31:45 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 17:31:45 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 17:31:45 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 17:31:45 - INFO - extract_relative_expression_data:1158 - Data extraction plan: 3 gene targets, 0 tissue targets, 3 total items
+2025-06-12 17:31:47 - WARNING - extract_relative_expression_data:1203 - Found dose-like values in trigger column: ['250uL  Saline  (D1, 3)', '250uL  HDM 5ug (D1, 3)', '250uL  HDM 5ug (D1, 3)'] - possible wrong location
+2025-06-12 17:31:47 - DEBUG - extract_relative_expression_data:1222 - Filtered out invalid trigger: 'x'
+2025-06-12 17:31:47 - INFO - extract_relative_expression_data:1253 - Filtered 1 invalid/dose-like triggers from 6 raw triggers, kept 5 triggers
+2025-06-12 17:31:47 - INFO - extract_relative_expression_data:1268 - Found 3 gene targets, 0 tissue targets, and 5 triggers in relative expression data
+2025-06-12 17:31:47 - DEBUG - extract_relative_expression_data:1269 - Gene targets: ['rIL13', 'rIL33', 'rTSLP']
+2025-06-12 17:31:47 - DEBUG - extract_relative_expression_data:1270 - Tissue targets: []
+2025-06-12 17:31:47 - DEBUG - extract_relative_expression_data:1274 -   Trigger 1: '250uL  Saline  (D1, 3)'
+2025-06-12 17:31:47 - DEBUG - extract_relative_expression_data:1274 -   Trigger 2: '250uL  HDM 5ug (D1, 3)'
+2025-06-12 17:31:47 - DEBUG - extract_relative_expression_data:1274 -   Trigger 3: '250uL  HDM 5ug (D1, 3)'
+2025-06-12 17:31:47 - DEBUG - extract_relative_expression_data:1274 -   Trigger 4: '250uL  HDM 5ug (D1, 3)'
+2025-06-12 17:31:47 - DEBUG - extract_relative_expression_data:1274 -   Trigger 5: '250uL  HDM 5ug (D1, 3)'
+2025-06-12 17:31:47 - INFO - extract_relative_expression_data:1287 - Data extraction: 5 triggers × 3 items = 15 expected combinations
+2025-06-12 17:31:47 - DEBUG - _extract_trigger_target_data:1370 - Starting data extraction from row 130 for 5 triggers and 3 targets
+2025-06-12 17:31:47 - DEBUG - _extract_trigger_target_data:1371 - Target columns: [6, 10, 14]
+2025-06-12 17:31:47 - DEBUG - _extract_trigger_target_data:1403 - Processing trigger '250uL  Saline  (D1, 3)' (original: '250uL  Saline  (D1, 3)', row 130)
+2025-06-12 17:31:47 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL13' (col 6): rel_exp=0.9999999999999999, low=0.5765553740558702, high=1.3615838736183234
+2025-06-12 17:31:47 - DEBUG - debug_print:128 -   ✓ 250uL  Saline  (D1, 3) + rIL13: {'rel_exp': 0.9999999999999999, 'low': 0.5765553740558702, 'high': 1.3615838736183234}
+2025-06-12 17:31:47 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  Saline  (D1, 3) + rIL13
+2025-06-12 17:31:47 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL33' (col 10): rel_exp=0.9999999999999977, low=0.09618116499931595, high=0.1064164202765735
+2025-06-12 17:31:47 - DEBUG - debug_print:128 -   ✓ 250uL  Saline  (D1, 3) + rIL33: {'rel_exp': 0.9999999999999977, 'low': 0.09618116499931595, 'high': 0.1064164202765735}
+2025-06-12 17:31:47 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  Saline  (D1, 3) + rIL33
+2025-06-12 17:31:47 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rTSLP' (col 14): rel_exp=1.0000000000000042, low=0.9697439357372653, high=32.05122541108329
+2025-06-12 17:31:47 - DEBUG - debug_print:128 -   ✓ 250uL  Saline  (D1, 3) + rTSLP: {'rel_exp': 1.0000000000000042, 'low': 0.9697439357372653, 'high': 32.05122541108329}
+2025-06-12 17:31:47 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  Saline  (D1, 3) + rTSLP
+2025-06-12 17:31:47 - DEBUG - _extract_trigger_target_data:1403 - Processing trigger '250uL  HDM 5ug (D1, 3)' (original: '250uL  HDM 5ug (D1, 3)', row 131)
+2025-06-12 17:31:47 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL13' (col 6): rel_exp=1.0309049711511449, low=0.6184850140620156, high=1.545995203721978
+2025-06-12 17:31:47 - DEBUG - debug_print:128 -   ✓ 250uL  HDM 5ug (D1, 3) + rIL13: {'rel_exp': 1.0309049711511449, 'low': 0.6184850140620156, 'high': 1.545995203721978}
+2025-06-12 17:31:47 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  HDM 5ug (D1, 3) + rIL13
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL33' (col 10): rel_exp=0.9283893877529406, low=0.25396018678952126, high=0.34959035283517403
+2025-06-12 17:31:48 - DEBUG - debug_print:128 -   ✓ 250uL  HDM 5ug (D1, 3) + rIL33: {'rel_exp': 0.9283893877529406, 'low': 0.25396018678952126, 'high': 0.34959035283517403}
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  HDM 5ug (D1, 3) + rIL33
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rTSLP' (col 14): rel_exp=2.5691876502278728, low=2.417512696244276, high=40.94969934279054
+2025-06-12 17:31:48 - DEBUG - debug_print:128 -   ✓ 250uL  HDM 5ug (D1, 3) + rTSLP: {'rel_exp': 2.5691876502278728, 'low': 2.417512696244276, 'high': 40.94969934279054}
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  HDM 5ug (D1, 3) + rTSLP
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1394 - Duplicate trigger detected: '250uL  HDM 5ug (D1, 3)' -> using key '250uL  HDM 5ug (D1, 3)_#2'
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1403 - Processing trigger '250uL  HDM 5ug (D1, 3)_#2' (original: '250uL  HDM 5ug (D1, 3)', row 132)
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL13' (col 6): rel_exp=1.4108136223701113, low=1.137387183542104, high=5.868639987151128
+2025-06-12 17:31:48 - DEBUG - debug_print:128 -   ✓ 250uL  HDM 5ug (D1, 3)_#2 + rIL13: {'rel_exp': 1.4108136223701113, 'low': 1.137387183542104, 'high': 5.868639987151128}
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  HDM 5ug (D1, 3)_#2 + rIL13
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL33' (col 10): rel_exp=0.5701709075665287, low=0.19104833985759762, high=0.2873218705601178
+2025-06-12 17:31:48 - DEBUG - debug_print:128 -   ✓ 250uL  HDM 5ug (D1, 3)_#2 + rIL33: {'rel_exp': 0.5701709075665287, 'low': 0.19104833985759762, 'high': 0.2873218705601178}
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  HDM 5ug (D1, 3)_#2 + rIL33
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rTSLP' (col 14): rel_exp=1.2460346196190688, low=1.194331435248967, high=28.783107534864023
+2025-06-12 17:31:48 - DEBUG - debug_print:128 -   ✓ 250uL  HDM 5ug (D1, 3)_#2 + rTSLP: {'rel_exp': 1.2460346196190688, 'low': 1.194331435248967, 'high': 28.783107534864023}
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  HDM 5ug (D1, 3)_#2 + rTSLP
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1394 - Duplicate trigger detected: '250uL  HDM 5ug (D1, 3)' -> using key '250uL  HDM 5ug (D1, 3)_#3'
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1403 - Processing trigger '250uL  HDM 5ug (D1, 3)_#3' (original: '250uL  HDM 5ug (D1, 3)', row 133)
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL13' (col 6): rel_exp=3.653962989901116, low=1.8644324416720206, high=3.8069018412578663
+2025-06-12 17:31:48 - DEBUG - debug_print:128 -   ✓ 250uL  HDM 5ug (D1, 3)_#3 + rIL13: {'rel_exp': 3.653962989901116, 'low': 1.8644324416720206, 'high': 3.8069018412578663}
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  HDM 5ug (D1, 3)_#3 + rIL13
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL33' (col 10): rel_exp=0.4831927618656315, low=0.14047788889727236, high=0.19805939126427446
+2025-06-12 17:31:48 - DEBUG - debug_print:128 -   ✓ 250uL  HDM 5ug (D1, 3)_#3 + rIL33: {'rel_exp': 0.4831927618656315, 'low': 0.14047788889727236, 'high': 0.19805939126427446}
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  HDM 5ug (D1, 3)_#3 + rIL33
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rTSLP' (col 14): rel_exp=1.9708867690797045, low=1.858394428172278, high=32.55941658490618
+2025-06-12 17:31:48 - DEBUG - debug_print:128 -   ✓ 250uL  HDM 5ug (D1, 3)_#3 + rTSLP: {'rel_exp': 1.9708867690797045, 'low': 1.858394428172278, 'high': 32.55941658490618}
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  HDM 5ug (D1, 3)_#3 + rTSLP
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1394 - Duplicate trigger detected: '250uL  HDM 5ug (D1, 3)' -> using key '250uL  HDM 5ug (D1, 3)_#4'
+2025-06-12 17:31:48 - DEBUG - _extract_trigger_target_data:1403 - Processing trigger '250uL  HDM 5ug (D1, 3)_#4' (original: '250uL  HDM 5ug (D1, 3)', row 134)
+2025-06-12 17:31:49 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL13' (col 6): rel_exp=3.5508195220372167, low=1.9016503272960834, high=4.09443562721368
+2025-06-12 17:31:49 - DEBUG - debug_print:128 -   ✓ 250uL  HDM 5ug (D1, 3)_#4 + rIL13: {'rel_exp': 3.5508195220372167, 'low': 1.9016503272960834, 'high': 4.09443562721368}
+2025-06-12 17:31:49 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  HDM 5ug (D1, 3)_#4 + rIL13
+2025-06-12 17:31:49 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL33' (col 10): rel_exp=0.44482708271838034, low=0.1136770616775763, high=0.15270008305934213
+2025-06-12 17:31:49 - DEBUG - debug_print:128 -   ✓ 250uL  HDM 5ug (D1, 3)_#4 + rIL33: {'rel_exp': 0.44482708271838034, 'low': 0.1136770616775763, 'high': 0.15270008305934213}
+2025-06-12 17:31:49 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  HDM 5ug (D1, 3)_#4 + rIL33
+2025-06-12 17:31:49 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rTSLP' (col 14): rel_exp=1.5130692570309188, low=0.4351516489366716, high=0.6108208801936745
+2025-06-12 17:31:49 - DEBUG - debug_print:128 -   ✓ 250uL  HDM 5ug (D1, 3)_#4 + rTSLP: {'rel_exp': 1.5130692570309188, 'low': 0.4351516489366716, 'high': 0.6108208801936745}
+2025-06-12 17:31:49 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 250uL  HDM 5ug (D1, 3)_#4 + rTSLP
+2025-06-12 17:31:49 - INFO - _extract_trigger_target_data:1435 - Data extraction completed: 15 combinations extracted, 0 skipped
+2025-06-12 17:31:49 - INFO - _extract_trigger_target_data:1436 - Trigger name distribution: {'250uL  Saline  (D1, 3)': 1, '250uL  HDM 5ug (D1, 3)': 4}
+2025-06-12 17:31:49 - INFO - extract_relative_expression_data:1298 - Actually extracted 15 trigger-target combinations
+2025-06-12 17:31:49 - INFO - extract_relative_expression_data:1310 - Final 15 combinations after removing empty triggers
+2025-06-12 17:31:49 - DEBUG - safe_workbook_operation:521 - Successfully processed workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010303 (rHDM_Pilot_2)\Results\2024JAN26 END 2024010303_rHDM_Pilot_2_DDCt Excel macro_BioMek_v45_Test.xlsm
+2025-06-12 17:31:49 - INFO - process_study_folder:1602 - Keeping results triggers: 5 vs metadata 5
+2025-06-12 17:31:49 - INFO - export_to_csv:1679 - Starting CSV export to: test_output\hdm_fix_test.csv
+2025-06-12 17:31:49 - INFO - export_to_csv:1680 - Processing 1 studies for CSV export
+2025-06-12 17:31:49 - DEBUG - export_to_csv:1702 - Processing study for CSV: rHDM_Pilot_2 (2024010303)
+2025-06-12 17:31:49 - INFO - _process_study_for_csv:1755 - Processing CSV data for study: rHDM_Pilot_2 (2024010303)
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1760 - Study info for CSV: {'study_name': 'rHDM_Pilot_2', 'study_code': "'2024010303'", 'screening_model': 'Rat', 'trigger_dose_map': {'Saline': {'dose': None, 'dose_type': None, 'dose_flagged': False, 'original_name': 'Saline'}, 'HDM': {'dose': '5 ug', 'dose_type': None, 'dose_flagged': False, 'original_name': 'HDM'}, 'HDM_#2': {'dose': '5 ug', 'dose_type': None, 'dose_flagged': False, 'original_name': 'HDM'}, 'HDM_#3': {'dose': '5 ug', 'dose_type': None, 'dose_flagged': False, 'original_name': 'HDM'}, 'HDM_#4': {'dose': '5 ug', 'dose_type': None, 'dose_flagged': False, 'original_name': 'HDM'}}, 'timepoint': 'D23', 'tissue': 'BALF'}
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1775 - Found 5 triggers in relative expression data
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1776 - Trigger names in relative expression: ['250uL  Saline  (D1, 3)', '250uL  HDM 5ug (D1, 3)', '250uL  HDM 5ug (D1, 3)_#2', '250uL  HDM 5ug (D1, 3)_#3', '250uL  HDM 5ug (D1, 3)_#4']
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1777 - Trigger names in metadata: ['Saline', 'HDM', 'HDM_#2', 'HDM_#3', 'HDM_#4']
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1828 - Processing trigger key '250uL  Saline  (D1, 3)' (name: '250uL  Saline  (D1, 3)') with 3 items, final dose: ''
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  Saline  (D1, 3)' -> 'Saline'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  Saline  (D1, 3) (key: 250uL  Saline  (D1, 3)) -> rIL13 (gene_target) = {'rel_exp': 0.9999999999999999, 'low': 0.5765553740558702, 'high': 1.3615838736183234}, dose = 
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  Saline  (D1, 3)' -> 'Saline'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  Saline  (D1, 3) (key: 250uL  Saline  (D1, 3)) -> rIL33 (gene_target) = {'rel_exp': 0.9999999999999977, 'low': 0.09618116499931595, 'high': 0.1064164202765735}, dose = 
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  Saline  (D1, 3)' -> 'Saline'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  Saline  (D1, 3) (key: 250uL  Saline  (D1, 3)) -> rTSLP (gene_target) = {'rel_exp': 1.0000000000000042, 'low': 0.9697439357372653, 'high': 32.05122541108329}, dose = 
+2025-06-12 17:31:49 - DEBUG - extract_dose_from_trigger_name:319 - Extracted dose '5 ug' from trigger name: '250uL  HDM 5ug (D1, 3)'
+2025-06-12 17:31:49 - INFO - _process_study_for_csv:1819 - Using extracted dose '5 ug' for trigger '250uL  HDM 5ug (D1, 3)'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1828 - Processing trigger key '250uL  HDM 5ug (D1, 3)' (name: '250uL  HDM 5ug (D1, 3)') with 3 items, final dose: '5 ug'
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  HDM 5ug (D1, 3) (key: 250uL  HDM 5ug (D1, 3)) -> rIL13 (gene_target) = {'rel_exp': 1.0309049711511449, 'low': 0.6184850140620156, 'high': 1.545995203721978}, dose = 5 ug
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  HDM 5ug (D1, 3) (key: 250uL  HDM 5ug (D1, 3)) -> rIL33 (gene_target) = {'rel_exp': 0.9283893877529406, 'low': 0.25396018678952126, 'high': 0.34959035283517403}, dose = 5 ug
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  HDM 5ug (D1, 3) (key: 250uL  HDM 5ug (D1, 3)) -> rTSLP (gene_target) = {'rel_exp': 2.5691876502278728, 'low': 2.417512696244276, 'high': 40.94969934279054}, dose = 5 ug
+2025-06-12 17:31:49 - DEBUG - extract_dose_from_trigger_name:319 - Extracted dose '5 ug' from trigger name: '250uL  HDM 5ug (D1, 3)'
+2025-06-12 17:31:49 - INFO - _process_study_for_csv:1819 - Using extracted dose '5 ug' for trigger '250uL  HDM 5ug (D1, 3)'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1828 - Processing trigger key '250uL  HDM 5ug (D1, 3)_#2' (name: '250uL  HDM 5ug (D1, 3)') with 3 items, final dose: '5 ug'
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  HDM 5ug (D1, 3) (key: 250uL  HDM 5ug (D1, 3)_#2) -> rIL13 (gene_target) = {'rel_exp': 1.4108136223701113, 'low': 1.137387183542104, 'high': 5.868639987151128}, dose = 5 ug
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  HDM 5ug (D1, 3) (key: 250uL  HDM 5ug (D1, 3)_#2) -> rIL33 (gene_target) = {'rel_exp': 0.5701709075665287, 'low': 0.19104833985759762, 'high': 0.2873218705601178}, dose = 5 ug
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  HDM 5ug (D1, 3) (key: 250uL  HDM 5ug (D1, 3)_#2) -> rTSLP (gene_target) = {'rel_exp': 1.2460346196190688, 'low': 1.194331435248967, 'high': 28.783107534864023}, dose = 5 ug
+2025-06-12 17:31:49 - DEBUG - extract_dose_from_trigger_name:319 - Extracted dose '5 ug' from trigger name: '250uL  HDM 5ug (D1, 3)'
+2025-06-12 17:31:49 - INFO - _process_study_for_csv:1819 - Using extracted dose '5 ug' for trigger '250uL  HDM 5ug (D1, 3)'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1828 - Processing trigger key '250uL  HDM 5ug (D1, 3)_#3' (name: '250uL  HDM 5ug (D1, 3)') with 3 items, final dose: '5 ug'
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  HDM 5ug (D1, 3) (key: 250uL  HDM 5ug (D1, 3)_#3) -> rIL13 (gene_target) = {'rel_exp': 3.653962989901116, 'low': 1.8644324416720206, 'high': 3.8069018412578663}, dose = 5 ug
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  HDM 5ug (D1, 3) (key: 250uL  HDM 5ug (D1, 3)_#3) -> rIL33 (gene_target) = {'rel_exp': 0.4831927618656315, 'low': 0.14047788889727236, 'high': 0.19805939126427446}, dose = 5 ug
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  HDM 5ug (D1, 3) (key: 250uL  HDM 5ug (D1, 3)_#3) -> rTSLP (gene_target) = {'rel_exp': 1.9708867690797045, 'low': 1.858394428172278, 'high': 32.55941658490618}, dose = 5 ug
+2025-06-12 17:31:49 - DEBUG - extract_dose_from_trigger_name:319 - Extracted dose '5 ug' from trigger name: '250uL  HDM 5ug (D1, 3)'
+2025-06-12 17:31:49 - INFO - _process_study_for_csv:1819 - Using extracted dose '5 ug' for trigger '250uL  HDM 5ug (D1, 3)'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1828 - Processing trigger key '250uL  HDM 5ug (D1, 3)_#4' (name: '250uL  HDM 5ug (D1, 3)') with 3 items, final dose: '5 ug'
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  HDM 5ug (D1, 3) (key: 250uL  HDM 5ug (D1, 3)_#4) -> rIL13 (gene_target) = {'rel_exp': 3.5508195220372167, 'low': 1.9016503272960834, 'high': 4.09443562721368}, dose = 5 ug
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  HDM 5ug (D1, 3) (key: 250uL  HDM 5ug (D1, 3)_#4) -> rIL33 (gene_target) = {'rel_exp': 0.44482708271838034, 'low': 0.1136770616775763, 'high': 0.15270008305934213}, dose = 5 ug
+2025-06-12 17:31:49 - DEBUG - clean_trigger_name:2365 - Cleaned trigger name: '250uL  HDM 5ug (D1, 3)' -> 'HDM'
+2025-06-12 17:31:49 - DEBUG - _process_study_for_csv:1852 - Added CSV row: 250uL  HDM 5ug (D1, 3) (key: 250uL  HDM 5ug (D1, 3)_#4) -> rTSLP (gene_target) = {'rel_exp': 1.5130692570309188, 'low': 0.4351516489366716, 'high': 0.6108208801936745}, dose = 5 ug
+2025-06-12 17:31:49 - INFO - _process_study_for_csv:1874 - INCLUDED IN CSV: rHDM_Pilot_2 (2024010303) - Added 15 rows
+2025-06-12 17:31:49 - INFO - export_to_csv:1721 - CSV file written successfully: test_output\hdm_fix_test.csv
+2025-06-12 17:31:49 - INFO - export_to_csv:1722 - ============================================================
+2025-06-12 17:31:49 - INFO - export_to_csv:1723 - CSV EXPORT SUMMARY
+2025-06-12 17:31:49 - INFO - export_to_csv:1724 - ============================================================
+2025-06-12 17:31:49 - INFO - export_to_csv:1725 - Studies processed for CSV: 1
+2025-06-12 17:31:49 - INFO - export_to_csv:1726 - Studies included in CSV: 1
+2025-06-12 17:31:49 - INFO - export_to_csv:1727 - Studies excluded from CSV: 0
+2025-06-12 17:31:49 - INFO - export_to_csv:1728 - Total data rows in CSV: 15

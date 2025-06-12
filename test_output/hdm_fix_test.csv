@@ -1,0 +1,16 @@
+study_name,study_code,screening_model,gene_target,item_type,trigger,dose,dose_type,timepoint,tissue,avg_rel_exp,avg_rel_exp_lsd,avg_rel_exp_hsd
+rHDM_Pilot_2,'2024010303',Rat,rIL13,gene_target,Saline,,,D23,BALF,1.0000,0.5766,1.3616
+rHDM_Pilot_2,'2024010303',Rat,rIL13,gene_target,HDM,5 ug,,D23,BALF,1.0309,0.6185,1.5460
+rHDM_Pilot_2,'2024010303',Rat,rIL13,gene_target,HDM,5 ug,,D23,BALF,1.4108,1.1374,5.8686
+rHDM_Pilot_2,'2024010303',Rat,rIL13,gene_target,HDM,5 ug,,D23,BALF,3.6540,1.8644,3.8069
+rHDM_Pilot_2,'2024010303',Rat,rIL13,gene_target,HDM,5 ug,,D23,BALF,3.5508,1.9017,4.0944
+rHDM_Pilot_2,'2024010303',Rat,rIL33,gene_target,Saline,,,D23,BALF,1.0000,0.0962,0.1064
+rHDM_Pilot_2,'2024010303',Rat,rIL33,gene_target,HDM,5 ug,,D23,BALF,0.9284,0.2540,0.3496
+rHDM_Pilot_2,'2024010303',Rat,rIL33,gene_target,HDM,5 ug,,D23,BALF,0.5702,0.1910,0.2873
+rHDM_Pilot_2,'2024010303',Rat,rIL33,gene_target,HDM,5 ug,,D23,BALF,0.4832,0.1405,0.1981
+rHDM_Pilot_2,'2024010303',Rat,rIL33,gene_target,HDM,5 ug,,D23,BALF,0.4448,0.1137,0.1527
+rHDM_Pilot_2,'2024010303',Rat,rTSLP,gene_target,Saline,,,D23,BALF,1.0000,0.9697,32.0512
+rHDM_Pilot_2,'2024010303',Rat,rTSLP,gene_target,HDM,5 ug,,D23,BALF,2.5692,2.4175,40.9497
+rHDM_Pilot_2,'2024010303',Rat,rTSLP,gene_target,HDM,5 ug,,D23,BALF,1.2460,1.1943,28.7831
+rHDM_Pilot_2,'2024010303',Rat,rTSLP,gene_target,HDM,5 ug,,D23,BALF,1.9709,1.8584,32.5594
+rHDM_Pilot_2,'2024010303',Rat,rTSLP,gene_target,HDM,5 ug,,D23,BALF,1.5131,0.4352,0.6108

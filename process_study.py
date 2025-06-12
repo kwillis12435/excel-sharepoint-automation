@@ -127,6 +127,103 @@ def debug_print(*args, **kwargs):
         message = ' '.join(str(arg) for arg in args)
         logger.debug(message)
 
+def load_known_targets() -> Dict[str, str]:
+    """
+    Load known gene targets from the alltargets.csv file.
+    Returns a dictionary mapping target names to their aliases.
+    Also creates reverse mappings for aliases.
+    """
+    targets_dict = {}
+    
+    # Try to find the targets file
+    possible_paths = [
+        "alltargets.csv",
+        os.path.join(os.path.dirname(__file__), "alltargets.csv"),
+        os.path.join(os.getcwd(), "alltargets.csv")
+    ]
+    
+    targets_file = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            targets_file = path
+            break
+    
+    if not targets_file:
+        print("Warning: alltargets.csv not found, using basic target detection")
+        if logger:
+            logger.warning("alltargets.csv not found, using basic target detection")
+        return {}
+    
+    try:
+        with open(targets_file, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                target = row.get('Target', '').strip()
+                alias = row.get('Alias', '').strip()
+                
+                if target and target != 'null':
+                    # Add the main target
+                    targets_dict[target.upper()] = target
+                    
+                    # Add aliases if they exist
+                    if alias and alias != 'null':
+                        aliases = [a.strip() for a in alias.split(',')]
+                        for a in aliases:
+                            if a:
+                                targets_dict[a.upper()] = target
+        
+        print(f"Loaded {len(targets_dict)} target names and aliases from {targets_file}")
+        if logger:
+            logger.info(f"Loaded {len(targets_dict)} target names and aliases from {targets_file}")
+        
+        return targets_dict
+        
+    except Exception as e:
+        print(f"Error loading targets file: {e}")
+        if logger:
+            logger.error(f"Error loading targets file: {e}")
+        return {}
+
+# Global targets dictionary - loaded once at startup
+KNOWN_TARGETS = {}
+
+def init_targets():
+    """Initialize the global targets dictionary."""
+    global KNOWN_TARGETS
+    KNOWN_TARGETS = load_known_targets()
+
+def is_known_target(text: str) -> Tuple[bool, Optional[str]]:
+    """
+    Check if a string represents a known gene target.
+    Handles prefixes like 'r', 'm', 'h' before target names.
+    
+    Args:
+        text: String to check
+        
+    Returns:
+        Tuple of (is_target, canonical_target_name)
+    """
+    if not text or not KNOWN_TARGETS:
+        return False, None
+    
+    text_clean = str(text).strip()
+    text_upper = text_clean.upper()
+    
+    # First try exact match
+    if text_upper in KNOWN_TARGETS:
+        return True, KNOWN_TARGETS[text_upper]
+    
+    # Try with common prefixes (species indicators)
+    prefixes = ['R', 'M', 'H', 'C']  # rat, mouse, human, cynomolgus
+    for prefix in prefixes:
+        if text_upper.startswith(prefix) and len(text_upper) > 1:
+            target_without_prefix = text_upper[1:]
+            if target_without_prefix in KNOWN_TARGETS:
+                canonical_name = KNOWN_TARGETS[target_without_prefix]
+                return True, f"{prefix.lower()}{canonical_name}"
+    
+    return False, None
+
 def is_empty_or_zero(value: Any) -> bool:
     """
     Check if a cell value should be considered empty.
@@ -343,6 +440,7 @@ def is_tissue_name(text: str) -> bool:
 def classify_target_or_tissue(text: str, procedure_tissues: List[str]) -> Tuple[str, Optional[str], Optional[str]]:
     """
     Classify a text string as either a tissue or gene target.
+    Uses known targets list with prefix handling for better accuracy.
     Simple rule: If it's a tissue, keep it as tissue. If it's a target, keep it as target.
     No more complex splitting - one item = one classification.
     """
@@ -350,7 +448,14 @@ def classify_target_or_tissue(text: str, procedure_tissues: List[str]) -> Tuple[
         return 'target', None, None
     text_clean = str(text).strip()
     
-    # First check if the entire string is a tissue (exact match to procedure tissues)
+    # First check if it's a known gene target (with prefix handling)
+    is_target_known, canonical_name = is_known_target(text_clean)
+    if is_target_known:
+        if Config.DEBUG:
+            print(f"    Found known target '{text_clean}' -> '{canonical_name}'")
+        return 'target', None, canonical_name
+    
+    # Check if the entire string is a tissue (exact match to procedure tissues)
     for proc_tissue in procedure_tissues:
         if normalize_string(text_clean) == normalize_string(proc_tissue):
             return 'tissue', text_clean, None
@@ -387,9 +492,9 @@ def classify_target_or_tissue(text: str, procedure_tissues: List[str]) -> Tuple[
                         print(f"    Found procedure tissue word '{word_clean}' in '{text_clean}' - treating whole thing as tissue")
                     return 'tissue', text_clean, None
     
-    # Otherwise, treat as gene target
+    # If not a known target or tissue, default to target
     if Config.DEBUG:
-        print(f"    Result: TARGET - '{text_clean}'")
+        print(f"    Result: TARGET (unknown) - '{text_clean}'")
     return 'target', None, text_clean
 
 
@@ -731,15 +836,21 @@ def _create_trigger_dose_map(triggers: List[str], doses: List[Any]) -> Dict[str,
     Ensures both lists are the same length by padding doses with None.
     Now also detects dose types (SQ, IV, IM, intratracheal) and extracts doses from trigger names.
     
+    IMPORTANT: Handles duplicate trigger names by making keys unique with position index.
+    
     Returns:
-        Dictionary mapping trigger -> {"dose": dose_value, "dose_type": detected_type}
+        Dictionary mapping trigger_key -> {"dose": dose_value, "dose_type": detected_type}
+        where trigger_key is "trigger_name" or "trigger_name_#N" for duplicates
     """
     # Ensure lists are same length
     while len(doses) < len(triggers):
         doses.append(None)
     
     trigger_dose_map = {}
+    trigger_name_counts = {}  # Track how many times we've seen each trigger name
+    
     for trigger, dose in zip(triggers, doses[:len(triggers)]):
+        trigger_name = str(trigger).strip()
         dose_str = str(dose) if dose is not None else ""
         detected_dose_type = detect_dose_type(dose_str)
         
@@ -749,27 +860,42 @@ def _create_trigger_dose_map(triggers: List[str], doses: List[Any]) -> Dict[str,
         # If no valid dose from metadata, try to extract from trigger name
         final_dose = standardized_dose
         if not standardized_dose:
-            extracted_dose = extract_dose_from_trigger_name(trigger)
+            extracted_dose = extract_dose_from_trigger_name(trigger_name)
             if extracted_dose:
                 final_dose, is_flagged = validate_and_standardize_dose(extracted_dose)
                 if logger:
-                    logger.info(f"No metadata dose for trigger '{trigger}', using extracted dose: '{final_dose}'" + 
+                    logger.info(f"No metadata dose for trigger '{trigger_name}', using extracted dose: '{final_dose}'" + 
                                (f" (FLAGGED)" if is_flagged else ""))
         
-        trigger_dose_map[str(trigger)] = {
+        # Create unique trigger key to handle duplicates
+        if trigger_name in trigger_name_counts:
+            trigger_name_counts[trigger_name] += 1
+            trigger_key = f"{trigger_name}_#{trigger_name_counts[trigger_name]}"
+            if logger:
+                logger.debug(f"Duplicate trigger in metadata: '{trigger_name}' -> using key '{trigger_key}'")
+        else:
+            trigger_name_counts[trigger_name] = 1
+            trigger_key = trigger_name
+        
+        trigger_dose_map[trigger_key] = {
             "dose": final_dose,
             "dose_type": detected_dose_type,
-            "dose_flagged": is_flagged  # NEW: Track if dose needs review
+            "dose_flagged": is_flagged,  # Track if dose needs review
+            "original_name": trigger_name  # NEW: Keep original name for matching
         }
         
         if is_flagged:
-            print(f"⚠️ DOSE FLAGGED for trigger '{trigger}': '{dose_str}' -> '{final_dose}'")
+            print(f"⚠️ DOSE FLAGGED for trigger '{trigger_name}': '{dose_str}' -> '{final_dose}'")
         
         if detected_dose_type:
-            debug_print(f"Detected dose type '{detected_dose_type}' for trigger '{trigger}': {dose_str}")
+            debug_print(f"Detected dose type '{detected_dose_type}' for trigger '{trigger_name}': {dose_str}")
         
         if logger:
-            logger.debug(f"Trigger dose mapping: '{trigger}' -> dose: '{final_dose}', type: '{detected_dose_type}', flagged: {is_flagged}")
+            logger.debug(f"Trigger dose mapping: '{trigger_key}' (original: '{trigger_name}') -> dose: '{final_dose}', type: '{detected_dose_type}', flagged: {is_flagged}")
+    
+    print(f"Metadata trigger name distribution: {trigger_name_counts}")
+    if logger:
+        logger.info(f"Metadata trigger name distribution: {trigger_name_counts}")
     
     return trigger_dose_map
 
@@ -1153,10 +1279,35 @@ def extract_relative_expression_data(wb, procedure_tissues: List[str] = None) ->
             logger.info(f"Found tissues in target row: {found_tissues}")
     
     # Extract the actual expression data for each trigger-target combination (including tissues)
+    print(f"\n🔍 EXTRACTING DATA:")
+    print(f"  Triggers to process: {len(triggers)}")
+    print(f"  Data items (targets + tissues): {len(all_data_names)}")
+    print(f"  Expected trigger-target combinations: {len(triggers)} × {len(all_data_names)} = {len(triggers) * len(all_data_names)}")
+    if logger:
+        logger.info(f"Data extraction: {len(triggers)} triggers × {len(all_data_names)} items = {len(triggers) * len(all_data_names)} expected combinations")
+    
     triggers_data = _extract_trigger_target_data(ws, triggers, all_data_names, all_data_columns, trigger_start_row)
+    
+    # Count actual combinations found
+    actual_combinations = 0
+    for trigger_data in triggers_data.values():
+        actual_combinations += len(trigger_data)
+    
+    print(f"  Actual combinations extracted: {actual_combinations}")
+    if logger:
+        logger.info(f"Actually extracted {actual_combinations} trigger-target combinations")
     
     # Remove triggers with no data
     clean_triggers_data = {k: v for k, v in triggers_data.items() if v}
+    
+    # Final count after cleaning
+    final_combinations = 0
+    for trigger_data in clean_triggers_data.values():
+        final_combinations += len(trigger_data)
+    
+    print(f"  Final combinations after cleaning: {final_combinations}")
+    if logger:
+        logger.info(f"Final {final_combinations} combinations after removing empty triggers")
     
     return {
         "targets": targets,
@@ -1197,6 +1348,8 @@ def _extract_trigger_target_data(ws, triggers: List[str], targets: List[str],
     - X+2: low confidence interval  
     - X+3: high confidence interval
     
+    IMPORTANT: Handles duplicate trigger names by making keys unique with position index.
+    
     Args:
         ws: Excel worksheet
         triggers: List of trigger names
@@ -1205,12 +1358,22 @@ def _extract_trigger_target_data(ws, triggers: List[str], targets: List[str],
         trigger_start_row: Row where trigger data begins
         
     Returns:
-        Nested dictionary: {trigger: {target: {rel_exp, low, high}}}
+        Nested dictionary: {trigger_key: {target: {rel_exp, low, high}}}
+        where trigger_key is "trigger_name" or "trigger_name_#N" for duplicates
     """
     triggers_data = {}
+    combinations_extracted = 0
+    combinations_skipped = 0
+    trigger_name_counts = {}  # Track how many times we've seen each trigger name
+    
+    if logger:
+        logger.debug(f"Starting data extraction from row {trigger_start_row} for {len(triggers)} triggers and {len(targets)} targets")
+        logger.debug(f"Target columns: {target_columns}")
     
     for trigger_idx, trigger in enumerate(triggers):
         if is_empty_or_zero(trigger):
+            if logger:
+                logger.debug(f"Skipping empty trigger at index {trigger_idx}")
             continue
         
         # Additional safety check to filter out invalid triggers
@@ -1218,10 +1381,26 @@ def _extract_trigger_target_data(ws, triggers: List[str], targets: List[str],
         if (trigger_str.lower() in ['x', 'n/a', 'blank', 'none', '--', '-', ''] or
             trigger_str.startswith('#') or  # Excel error values
             (trigger_str.replace('.', '').replace(',', '').isdigit() and len(trigger_str) <= 4)):  # Pure small numbers
+            if logger:
+                logger.debug(f"Skipping invalid trigger: '{trigger_str}'")
             continue
             
+        # Create unique trigger key to handle duplicates
+        trigger_name = trigger_str
+        if trigger_name in trigger_name_counts:
+            trigger_name_counts[trigger_name] += 1
+            trigger_key = f"{trigger_name}_#{trigger_name_counts[trigger_name]}"
+            if logger:
+                logger.debug(f"Duplicate trigger detected: '{trigger_name}' -> using key '{trigger_key}'")
+        else:
+            trigger_name_counts[trigger_name] = 1
+            trigger_key = trigger_name
+            
         trigger_row = trigger_start_row + trigger_idx
-        triggers_data[trigger] = {}
+        triggers_data[trigger_key] = {}
+        
+        if logger:
+            logger.debug(f"Processing trigger '{trigger_key}' (original: '{trigger_name}', row {trigger_row})")
         
         for target_idx, target in enumerate(targets):
             base_col = target_columns[target_idx]
@@ -1233,13 +1412,31 @@ def _extract_trigger_target_data(ws, triggers: List[str], targets: List[str],
                 "high": ws.cell(row=trigger_row, column=base_col + 3).value      # High CI
             }
             
-            # Skip combinations with no data
+            # Debug: Show what we're extracting
+            if logger:
+                logger.debug(f"  Target '{target}' (col {base_col}): rel_exp={values['rel_exp']}, low={values['low']}, high={values['high']}")
+            
+            # Skip combinations with no data (all None values)
             if all(v is None for v in values.values()):
+                combinations_skipped += 1
+                if logger:
+                    logger.debug(f"    Skipped: all values are None for {trigger_key} + {target}")
                 continue
             
-            triggers_data[trigger][target] = values
+            # Keep combinations that have at least some data
+            triggers_data[trigger_key][target] = values
+            combinations_extracted += 1
             
-            debug_print(f"  {trigger} + {target}: {values}")
+            debug_print(f"  ✓ {trigger_key} + {target}: {values}")
+            if logger:
+                logger.debug(f"    ✓ Extracted data for {trigger_key} + {target}")
+    
+    if logger:
+        logger.info(f"Data extraction completed: {combinations_extracted} combinations extracted, {combinations_skipped} skipped")
+        logger.info(f"Trigger name distribution: {trigger_name_counts}")
+    
+    print(f"  📊 Data extraction summary: {combinations_extracted} extracted, {combinations_skipped} skipped")
+    print(f"  🔄 Trigger name counts: {trigger_name_counts}")
     
     return triggers_data
 
@@ -1586,28 +1783,49 @@ def _process_study_for_csv(study: Dict[str, Any], csv_rows: List[List[str]]) -> 
     gene_targets = study.get("relative_expression", {}).get("targets", [])
     tissue_targets = study.get("relative_expression", {}).get("tissue_targets", [])
     
-    for trigger in rel_exp_data.keys():
-            # Get dose info from metadata mapping
-            trigger_info = study_info["trigger_dose_map"].get(trigger, {"dose": "", "dose_type": ""})
+    for trigger_key in rel_exp_data.keys():
+            # Extract original trigger name from trigger key (handle duplicates)
+            # trigger_key might be "saline" or "saline_#2" for duplicates
+            if "_#" in trigger_key:
+                trigger_name = trigger_key.rsplit("_#", 1)[0]  # Remove "_#N" suffix
+            else:
+                trigger_name = trigger_key
+            
+            # Get dose info from metadata mapping - try exact trigger_key first, then original name
+            trigger_info = None
+            
+            # First try exact match with trigger_key (for duplicates like "Saline_#2")
+            if trigger_key in study_info["trigger_dose_map"]:
+                trigger_info = study_info["trigger_dose_map"][trigger_key]
+            else:
+                # Fall back to matching by original name
+                for metadata_key, metadata_info in study_info["trigger_dose_map"].items():
+                    if metadata_info.get("original_name", metadata_key) == trigger_name:
+                        trigger_info = metadata_info
+                        break
+                
+                # Last resort: use trigger name directly
+                if not trigger_info:
+                    trigger_info = study_info["trigger_dose_map"].get(trigger_name, {"dose": "", "dose_type": ""})
             
             # Try to extract dose from trigger name if not available in mapping
-            extracted_dose = extract_dose_from_trigger_name(trigger)
+            extracted_dose = extract_dose_from_trigger_name(trigger_name)
             if extracted_dose and not trigger_info.get("dose"):
                 trigger_info = {
                     "dose": extracted_dose,
                     "dose_type": trigger_info.get("dose_type", "")
                 }
                 if logger:
-                    logger.info(f"Using extracted dose '{extracted_dose}' for trigger '{trigger}'")
+                    logger.info(f"Using extracted dose '{extracted_dose}' for trigger '{trigger_name}'")
             elif trigger_info.get("dose") and extracted_dose:
                 # Both sources available - log for comparison
                 if logger:
-                    logger.debug(f"Trigger '{trigger}': metadata dose='{trigger_info.get('dose')}', extracted dose='{extracted_dose}'")
+                    logger.debug(f"Trigger '{trigger_name}': metadata dose='{trigger_info.get('dose')}', extracted dose='{extracted_dose}'")
             
-            trigger_data = rel_exp_data[trigger]
+            trigger_data = rel_exp_data[trigger_key]
             
             if logger:
-                logger.debug(f"Processing trigger '{trigger}' with {len(trigger_data)} items, final dose: '{trigger_info.get('dose', 'None')}'")
+                logger.debug(f"Processing trigger key '{trigger_key}' (name: '{trigger_name}') with {len(trigger_data)} items, final dose: '{trigger_info.get('dose', 'None')}'")
             
             for item_name, value in trigger_data.items():
                 # Determine if this item is a gene target or tissue target
@@ -1620,18 +1838,24 @@ def _process_study_for_csv(study: Dict[str, Any], csv_rows: List[List[str]]) -> 
                 
                 if isinstance(value, dict):
                     row = _create_csv_row(
-                        study_info, trigger, trigger_info, item_name, item_type,
+                        study_info, trigger_name, trigger_info, item_name, item_type,  # Use trigger_name, not trigger_key
                         {"rel_exp": value.get("rel_exp"), "low": value.get("low"), "high": value.get("high")}
                     )
                 else:
                     row = _create_csv_row(
-                        study_info, trigger, trigger_info, item_name, item_type,
+                        study_info, trigger_name, trigger_info, item_name, item_type,  # Use trigger_name, not trigger_key
                         {"rel_exp": value, "low": None, "high": None}
                     )
-                study_rows.append(row)
                 
-                if logger:
-                    logger.debug(f"Added CSV row: {trigger} -> {item_name} ({item_type}) = {value}, dose = {trigger_info.get('dose', 'None')}")
+                # Skip rows with empty/corrupted trigger names
+                if row and row[5]:  # row[5] is the trigger column
+                    study_rows.append(row)
+                    
+                    if logger:
+                        logger.debug(f"Added CSV row: {trigger_name} (key: {trigger_key}) -> {item_name} ({item_type}) = {value}, dose = {trigger_info.get('dose', 'None')}")
+                else:
+                    if logger:
+                        logger.debug(f"Skipped CSV row with empty/corrupted trigger: {trigger_name} (key: {trigger_key}) -> {item_name}")
 
     # Determine index for tissue and target columns in the row
     tissue_idx = 9  # 0-based index for 'tissue' in the row (shifted due to new item_type column)
@@ -1698,7 +1922,7 @@ def _create_csv_row(study_info: Dict[str, Any], trigger: str, trigger_info: Dict
     3. screening_model: Type of screening used
     4. gene_target: Name of the target gene (empty if tissue_target)
     5. item_type: Type of item (gene_target or tissue_target)
-    6. trigger: Name of the trigger (e.g., siRNA sequence)
+    6. trigger: Name of the trigger (e.g., siRNA sequence) - CLEANED
     7. dose: Dose amount for this trigger
     8. dose_type: Detected dose type (SQ, IV, IM, Intratracheal)
     9. timepoint: Time point of measurement (e.g., D14)
@@ -1718,6 +1942,19 @@ def _create_csv_row(study_info: Dict[str, Any], trigger: str, trigger_info: Dict
         rel_exp = values.get("rel_exp")
         low = values.get("low")
         high = values.get("high")
+    
+    # Clean the trigger name and handle dose extraction
+    existing_dose = trigger_info.get("dose", "")
+    has_existing_dose = bool(existing_dose and existing_dose.strip())
+    
+    cleaned_trigger, extracted_dose = clean_trigger_name(trigger, has_existing_dose)
+    
+    # Use extracted dose if no existing dose is available
+    final_dose = existing_dose
+    if not has_existing_dose and extracted_dose:
+        final_dose = extracted_dose
+        if logger:
+            logger.debug(f"Using extracted dose '{extracted_dose}' for cleaned trigger '{cleaned_trigger}'")
     
     # NEW LOGIC: Proper tissue vs target placement
     if item_type == "tissue_target":
@@ -1741,8 +1978,8 @@ def _create_csv_row(study_info: Dict[str, Any], trigger: str, trigger_info: Dict
         study_info["screening_model"],
         gene_target_col,                       # gene_target (empty for tissue_targets)
         item_type,                             # item_type (gene_target or tissue_target)
-        trigger,                               # trigger (from metadata)
-        str(trigger_info.get("dose", "")),     # dose (from metadata)
+        cleaned_trigger,                       # trigger (CLEANED - no doses/volumes/admin details)
+        str(final_dose),                       # dose (from metadata or extracted from trigger)
         str(trigger_info.get("dose_type", "")), # dose_type (detected)
         study_info["timepoint"],
         tissue_col,                            # tissue (study tissue OR tissue_target name)
@@ -1777,6 +2014,9 @@ def main():
     log_file_path = os.path.join(base_output_dir, f"study_processing_log_{month_name}_{timestamp}.log")
     
     init_logger(log_file_path)
+    
+    # Initialize target detection system
+    init_targets()
     
     logger.info("="*80)
     logger.info("STUDY PROCESSING SESSION STARTED")
@@ -2062,6 +2302,118 @@ def _extract_relative_expression_with_metadata_triggers(wb, procedure_tissues: L
         }
     
     return None
+
+def clean_trigger_name(trigger_name: str, has_existing_dose: bool = False) -> Tuple[str, Optional[str]]:
+    """
+    Clean trigger names by removing unnecessary information like volumes, doses, and administration details.
+    
+    Examples:
+    - "250uL  HDM 5ug (D1, 3)" -> "HDM" (and extract "5ug" if no existing dose)
+    - "200uL  Saline NA (D1, 3)" -> "Saline"
+    - "AC005120 2x5mpk (D1, 3)" -> "AC005120" (and extract "2x5mpk" if no existing dose)
+    - "AC00008 + saline" -> "AC00008 + saline"
+    - "PBS" -> "PBS"
+    
+    Args:
+        trigger_name: Raw trigger name from Excel
+        has_existing_dose: Whether there's already a dose in the metadata
+        
+    Returns:
+        Tuple of (cleaned_trigger_name, extracted_dose_if_needed)
+    """
+    if not trigger_name:
+        return "", None
+    
+    original_name = str(trigger_name).strip()
+    
+    # First, check for corrupted/invalid trigger names that should be filtered out
+    corrupted_patterns = [
+        r'^AC\d+\s+\d+\s*x\s*$',           # "AC006365 4 x"
+        r'^AC\d+/kg$',                     # "AC007163/kg"
+        r'^[A-Z]-[a-zA-Z0-9]+/[a-zA-Z0-9]+/[a-zA-Z]+$',  # "B-hIL11/hIL11RA/mL"
+        r'^\d+\s*x\s*$',                   # Just "4 x"
+        r'^/kg$',                          # Just "/kg"
+        r'^/[a-zA-Z]+$',                   # Just "/mL", "/ug", etc.
+        r'^\d+\s*[a-zA-Z]*\s*$',           # Pure numbers with optional units
+    ]
+    
+    for pattern in corrupted_patterns:
+        if re.match(pattern, original_name, re.IGNORECASE):
+            if logger:
+                logger.debug(f"Filtered out corrupted trigger name: '{original_name}'")
+            return "", None
+    
+    # Remove parentheses and everything inside them (D1, 3), (D1, 14), etc.
+    cleaned = re.sub(r'\([^)]*\)', '', original_name).strip()
+    
+    # Remove volume measurements at the beginning (250uL, 200uL, etc.)
+    cleaned = re.sub(r'^\d+\s*u?[lL]\s+', '', cleaned).strip()
+    
+    # Extract dose information before removing it (if no existing dose)
+    extracted_dose = None
+    if not has_existing_dose:
+        extracted_dose = extract_dose_from_trigger_name(cleaned)
+    
+    # For AC numbers with combinations (like "AC00008 + saline"), preserve the whole thing
+    if re.search(r'AC\d+.*[+&].*', cleaned, re.IGNORECASE):
+        # This is a compound combination, keep it as-is but remove dose info
+        dose_patterns = [
+            r'\s+\d+(?:\.\d+)?\s*(?:ug|μg|mg|ml)\b',           # "5ug", "250 mg"
+            r'\s+\d+(?:\.\d+)?\s*(?:mpk|mg/kg|ml/kg)\b',       # "5mpk", "10 mg/kg"
+            r'\s+\d+\s*x\s*\d+(?:\.\d+)?\s*(?:ug|μg|mg|ml|mpk|mg/kg)\b',  # "2x5mpk", "2x250ug"
+            r'\s+NA\b',                                         # "NA" (not applicable)
+        ]
+        
+        for pattern in dose_patterns:
+            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE).strip()
+    else:
+        # For single compounds, remove dose information
+        dose_patterns = [
+            r'\s+\d+(?:\.\d+)?\s*(?:ug|μg|mg|ml)\b',           # "5ug", "250 mg"
+            r'\s+\d+(?:\.\d+)?\s*(?:mpk|mg/kg|ml/kg)\b',       # "5mpk", "10 mg/kg"
+            r'\s+\d+\s*x\s*\d+(?:\.\d+)?\s*(?:ug|μg|mg|ml|mpk|mg/kg)\b',  # "2x5mpk", "2x250ug"
+            r'\s+NA\b',                                         # "NA" (not applicable)
+        ]
+        
+        for pattern in dose_patterns:
+            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE).strip()
+    
+    # Clean up extra whitespace
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    
+    # If we ended up with an empty string, use a fallback
+    if not cleaned:
+        # Try to extract just the core compound/trigger name
+        words = original_name.split()
+        for word in words:
+            # Look for AC numbers, common trigger names, etc.
+            if (re.match(r'^AC\d+', word, re.IGNORECASE) or 
+                word.upper() in ['SALINE', 'HDM', 'PBS', 'VEHICLE', 'CONTROL', 'ACSF']):
+                cleaned = word
+                break
+        
+        # Last resort - use first meaningful word that's not obviously corrupted
+        if not cleaned and words:
+            for word in words:
+                if (len(word) >= 2 and 
+                    not re.match(r'^\d+$', word) and  # Not pure numbers
+                    not word.endswith('/kg') and      # Not dose fragments
+                    not word.endswith('/mL')):        # Not unit fragments
+                    cleaned = word
+                    break
+    
+    # Final validation - if it's still corrupted, return empty
+    if cleaned and any(re.match(pattern, cleaned, re.IGNORECASE) for pattern in corrupted_patterns):
+        if logger:
+            logger.debug(f"Final filter caught corrupted trigger: '{cleaned}' from '{original_name}'")
+        return "", None
+    
+    if logger:
+        if cleaned != original_name:
+            logger.debug(f"Cleaned trigger name: '{original_name}' -> '{cleaned}'" + 
+                        (f" (extracted dose: '{extracted_dose}')" if extracted_dose else ""))
+    
+    return cleaned, extracted_dose
 
 if __name__ == "__main__":
     main()

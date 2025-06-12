@@ -1,0 +1,144 @@
+2025-06-12 17:01:54 - INFO - load_known_targets:177 - Loaded 0 target names and aliases from alltargets.csv
+2025-06-12 17:01:54 - INFO - process_study_folder:1510 - Starting processing of study: 2024010302 (rIL33_8_Alternaria)
+2025-06-12 17:01:54 - DEBUG - process_study_folder:1511 - Study folder path: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)
+2025-06-12 17:01:54 - DEBUG - process_study_folder:1512 - Expected info file: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\2024010302 (rIL33_8_Alternaria).xlsm
+2025-06-12 17:01:54 - DEBUG - process_study_folder:1513 - Expected results folder: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results
+2025-06-12 17:01:54 - DEBUG - process_study_folder:1520 - Found info file: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\2024010302 (rIL33_8_Alternaria).xlsm
+2025-06-12 17:01:54 - DEBUG - safe_workbook_operation:514 - Opening workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\2024010302 (rIL33_8_Alternaria).xlsm (read_only=True, data_only=True)
+2025-06-12 17:01:55 - INFO - extract_study_metadata:711 - Extracting metadata for study: 2024010302 (rIL33_8_Alternaria)
+2025-06-12 17:01:55 - DEBUG - extract_study_metadata:712 - Available sheets: ['Procedure Request Form', 'Dose Calculations', 'Animal Receipt', 'Dose Admin - CNS', 'Tissue Weights', 'Dose Admin - IT', 'Dose Admin - Inhalation', 'Body Weights', 'Blood', 'Inj Record - Trigger', 'Inj Record - Other', 'Harvest', 'Treatment', 'Unscheduled', 'Inj Record - Trigger - SD', 'Inj Record - Other - SD', 'BW and Grouping', 'Study Deviations', 'Medical Records', 'Drawing', 'TW-1.5mLEPAliquot tubes-Top', 'TW-15mL Conical Tube', 'TW-7mL Precellys Tube', 'TW-15mL Precellys Tube', 'TW Formulas', 'FOB Tabulation', 'Plasmid Dosing Prep', 'AAV8 Dosing Prep', 'Dropdown', 'Plate Map', 'Dosing-Virology', 'Dose Administration - ADME PK', 'Urine Collection - ADME PK', 'Blood Collection - ADME PK', 'CSF Collection', 'IOPs -Ocular', 'Dose Administration - Ocular', 'Mouse Anesthesia - Ocular', 'Euthanasia (Rabbits) - Ocular', 'Imaging Obs - Ocular', 'Rat Anesthesia - Ocular', 'BW-Obs Ocular', 'Group Description', 'TW-1.5mL EP AliqTubes-SidePort', 'TW-1.5mL EP AliqTubes-SideP 2']
+2025-06-12 17:01:55 - INFO - extract_study_metadata:761 - Extracted 6 valid triggers from metadata for 2024010302 (rIL33_8_Alternaria) (filtered 0 invalid)
+2025-06-12 17:01:55 - DEBUG - extract_study_metadata:766 -   Trigger 1: 'Saline' -> dose: NA
+2025-06-12 17:01:55 - DEBUG - extract_study_metadata:766 -   Trigger 2: 'Saline' -> dose: NA
+2025-06-12 17:01:55 - DEBUG - extract_study_metadata:766 -   Trigger 3: 'AC005120' -> dose: 2x5mpk
+2025-06-12 17:01:55 - DEBUG - extract_study_metadata:766 -   Trigger 4: 'AC005889' -> dose: 2x5mpk
+2025-06-12 17:01:55 - DEBUG - extract_study_metadata:766 -   Trigger 5: 'AC001714' -> dose: 2x5mpk
+2025-06-12 17:01:55 - DEBUG - extract_study_metadata:766 -   Trigger 6: 'AC002666' -> dose: 2x5mpk
+2025-06-12 17:01:55 - DEBUG - _create_trigger_dose_map:894 - Trigger dose mapping: 'Saline' (original: 'Saline') -> dose: 'None', type: 'None', flagged: False
+2025-06-12 17:01:55 - DEBUG - _create_trigger_dose_map:875 - Duplicate trigger in metadata: 'Saline' -> using key 'Saline_#2'
+2025-06-12 17:01:55 - DEBUG - _create_trigger_dose_map:894 - Trigger dose mapping: 'Saline_#2' (original: 'Saline') -> dose: 'None', type: 'None', flagged: False
+2025-06-12 17:01:55 - DEBUG - _create_trigger_dose_map:894 - Trigger dose mapping: 'AC005120' (original: 'AC005120') -> dose: '2x5mpk', type: 'None', flagged: False
+2025-06-12 17:01:55 - DEBUG - _create_trigger_dose_map:894 - Trigger dose mapping: 'AC005889' (original: 'AC005889') -> dose: '2x5mpk', type: 'None', flagged: False
+2025-06-12 17:01:55 - DEBUG - _create_trigger_dose_map:894 - Trigger dose mapping: 'AC001714' (original: 'AC001714') -> dose: '2x5mpk', type: 'None', flagged: False
+2025-06-12 17:01:55 - DEBUG - _create_trigger_dose_map:894 - Trigger dose mapping: 'AC002666' (original: 'AC002666') -> dose: '2x5mpk', type: 'None', flagged: False
+2025-06-12 17:01:55 - INFO - _create_trigger_dose_map:898 - Metadata trigger name distribution: {'Saline': 2, 'AC005120': 1, 'AC005889': 1, 'AC001714': 1, 'AC002666': 1}
+2025-06-12 17:01:56 - DEBUG - safe_workbook_operation:521 - Successfully processed workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\2024010302 (rIL33_8_Alternaria).xlsm
+2025-06-12 17:01:56 - INFO - process_study_folder:1526 - Successfully extracted metadata for 2024010302 (rIL33_8_Alternaria)
+2025-06-12 17:01:56 - DEBUG - process_study_folder:1530 -   Metadata study_name: rIL33_8_Alternaria
+2025-06-12 17:01:56 - DEBUG - process_study_folder:1530 -   Metadata study_code: 2024010302
+2025-06-12 17:01:56 - DEBUG - process_study_folder:1530 -   Metadata screening_model: Rat
+2025-06-12 17:01:56 - DEBUG - process_study_folder:1530 -   Metadata tissues: ['BALF', 'Accessory lobe', 'Lung - Remaining Right Lobes', 'Lung - Left Lobe']
+2025-06-12 17:01:56 - DEBUG - process_study_folder:1530 -   Metadata trigger_dose_map: {'Saline': {'dose': None, 'dose_type': None, 'dose_flagged': False, 'original_name': 'Saline'}, 'Saline_#2': {'dose': None, 'dose_type': None, 'dose_flagged': False, 'original_name': 'Saline'}, 'AC005120': {'dose': '2x5mpk', 'dose_type': None, 'dose_flagged': False, 'original_name': 'AC005120'}, 'AC005889': {'dose': '2x5mpk', 'dose_type': None, 'dose_flagged': False, 'original_name': 'AC005889'}, 'AC001714': {'dose': '2x5mpk', 'dose_type': None, 'dose_flagged': False, 'original_name': 'AC001714'}, 'AC002666': {'dose': '2x5mpk', 'dose_type': None, 'dose_flagged': False, 'original_name': 'AC002666'}}
+2025-06-12 17:01:56 - DEBUG - process_study_folder:1530 -   Metadata timepoint: D16
+2025-06-12 17:01:56 - DEBUG - process_study_folder:1543 - Found results file: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm
+2025-06-12 17:01:56 - DEBUG - safe_workbook_operation:514 - Opening workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm (read_only=True, data_only=True)
+2025-06-12 17:01:56 - INFO - extract_relative_expression_data:1073 - Extracting relative expression data
+2025-06-12 17:01:56 - DEBUG - extract_relative_expression_data:1074 - Available sheets: ['LAR Sheet(s)', 'Isolation Protocol', 'RNA Quant-It Data', 'BioMek CSV', 'MultiFlo CSV', 'Span8 CSV', 'cDNA and qPCR Setup (A)', 'cDNA & qPCR Setup (M)', 'Plate Setup', 'AmpPlots', 'RawData plate1', 'RawData plate2', 'Rel Exp-Target1', 'Rel Exp-Target2', 'Rel Exp-Target3', 'Rel Exp-Target4', 'Rel Exp-Target5', 'Rel Exp-Target6', 'Rel Exp-Target7', 'Rel Exp-Target8', 'Rel Exp-Target9', 'Rel Exp-Target10', 'Rel Exp-Target11', 'Rel Exp-Target12', 'Rel Exp-Target13', 'Rel Exp-Target14', 'Rel Exp-Target15', 'Rel Exp-Target16', 'Rel Exp-Target17', 'Rel Exp-Target18', 'Compiled Indiv. & Grp.', 'Graphs', 'Trigger Diagrams', 'Input']
+2025-06-12 17:01:56 - INFO - extract_relative_expression_data:1085 - Using sheet: 'Compiled Indiv. & Grp.' for relative expression data
+2025-06-12 17:02:05 - DEBUG - extract_targets_from_row:678 - Target row cell 'rIL13': classified as target
+2025-06-12 17:02:05 - DEBUG - extract_targets_from_row:691 -   Added to targets: 'rIL13'
+2025-06-12 17:02:05 - DEBUG - extract_targets_from_row:678 - Target row cell 'rIL33': classified as target
+2025-06-12 17:02:05 - DEBUG - extract_targets_from_row:691 -   Added to targets: 'rIL33'
+2025-06-12 17:02:05 - DEBUG - extract_targets_from_row:678 - Target row cell 'rTSLP': classified as target
+2025-06-12 17:02:05 - DEBUG - extract_targets_from_row:691 -   Added to targets: 'rTSLP'
+2025-06-12 17:02:05 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 17:02:05 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 17:02:05 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 17:02:05 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 17:02:05 - INFO - extract_relative_expression_data:1158 - Data extraction plan: 3 gene targets, 0 tissue targets, 3 total items
+2025-06-12 17:02:07 - WARNING - extract_relative_expression_data:1203 - Found dose-like values in trigger column: ['200uL  Saline NA (D1, 3)', '200uL  Saline NA (D1, 3)', '200uL  AC005120 2x5mpk (D1, 3)'] - possible wrong location
+2025-06-12 17:02:07 - DEBUG - extract_relative_expression_data:1244 - Filtered out dose-like trigger: '200uL  AC005120 2x5mpk (D1, 3)'
+2025-06-12 17:02:07 - DEBUG - extract_relative_expression_data:1244 - Filtered out dose-like trigger: '200uL  AC005889 2x5mpk (D1, 3)'
+2025-06-12 17:02:07 - DEBUG - extract_relative_expression_data:1244 - Filtered out dose-like trigger: '200uL  AC001714 2x5mpk (D1, 3)'
+2025-06-12 17:02:07 - DEBUG - extract_relative_expression_data:1244 - Filtered out dose-like trigger: '200uL  AC002666 2x5mpk (D1, 3)'
+2025-06-12 17:02:07 - DEBUG - extract_relative_expression_data:1222 - Filtered out invalid trigger: 'x'
+2025-06-12 17:02:07 - INFO - extract_relative_expression_data:1253 - Filtered 5 invalid/dose-like triggers from 7 raw triggers, kept 2 triggers
+2025-06-12 17:02:07 - WARNING - extract_relative_expression_data:1259 - Only found 2 triggers in results sheet, attempting metadata matching
+2025-06-12 17:02:07 - INFO - extract_relative_expression_data:1268 - Found 3 gene targets, 0 tissue targets, and 2 triggers in relative expression data
+2025-06-12 17:02:07 - DEBUG - extract_relative_expression_data:1269 - Gene targets: ['rIL13', 'rIL33', 'rTSLP']
+2025-06-12 17:02:07 - DEBUG - extract_relative_expression_data:1270 - Tissue targets: []
+2025-06-12 17:02:07 - DEBUG - extract_relative_expression_data:1274 -   Trigger 1: '200uL  Saline NA (D1, 3)'
+2025-06-12 17:02:07 - DEBUG - extract_relative_expression_data:1274 -   Trigger 2: '200uL  Saline NA (D1, 3)'
+2025-06-12 17:02:07 - INFO - extract_relative_expression_data:1287 - Data extraction: 2 triggers × 3 items = 6 expected combinations
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1370 - Starting data extraction from row 130 for 2 triggers and 3 targets
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1371 - Target columns: [6, 10, 14]
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1403 - Processing trigger '200uL  Saline NA (D1, 3)' (original: '200uL  Saline NA (D1, 3)', row 130)
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL13' (col 6): rel_exp=1.000000000000002, low=0.6239996050674493, high=1.6595716745972682
+2025-06-12 17:02:07 - DEBUG - debug_print:128 -   ✓ 200uL  Saline NA (D1, 3) + rIL13: {'rel_exp': 1.000000000000002, 'low': 0.6239996050674493, 'high': 1.6595716745972682}
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 200uL  Saline NA (D1, 3) + rIL13
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL33' (col 10): rel_exp=0.9999999999999999, low=0.1854758233525372, high=0.22771064220088066
+2025-06-12 17:02:07 - DEBUG - debug_print:128 -   ✓ 200uL  Saline NA (D1, 3) + rIL33: {'rel_exp': 0.9999999999999999, 'low': 0.1854758233525372, 'high': 0.22771064220088066}
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 200uL  Saline NA (D1, 3) + rIL33
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rTSLP' (col 14): rel_exp=0.9999999999999989, low=0.3285989059073784, high=0.4894226548014047
+2025-06-12 17:02:07 - DEBUG - debug_print:128 -   ✓ 200uL  Saline NA (D1, 3) + rTSLP: {'rel_exp': 0.9999999999999989, 'low': 0.3285989059073784, 'high': 0.4894226548014047}
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 200uL  Saline NA (D1, 3) + rTSLP
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1394 - Duplicate trigger detected: '200uL  Saline NA (D1, 3)' -> using key '200uL  Saline NA (D1, 3)_#2'
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1403 - Processing trigger '200uL  Saline NA (D1, 3)_#2' (original: '200uL  Saline NA (D1, 3)', row 131)
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL13' (col 6): rel_exp=4.1756749697074955, low=1.7247612304314957, high=2.9385131688731674
+2025-06-12 17:02:07 - DEBUG - debug_print:128 -   ✓ 200uL  Saline NA (D1, 3)_#2 + rIL13: {'rel_exp': 4.1756749697074955, 'low': 1.7247612304314957, 'high': 2.9385131688731674}
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 200uL  Saline NA (D1, 3)_#2 + rIL13
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rIL33' (col 10): rel_exp=0.9600949399136235, low=0.17249244926654073, high=0.21026993906285274
+2025-06-12 17:02:07 - DEBUG - debug_print:128 -   ✓ 200uL  Saline NA (D1, 3)_#2 + rIL33: {'rel_exp': 0.9600949399136235, 'low': 0.17249244926654073, 'high': 0.21026993906285274}
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 200uL  Saline NA (D1, 3)_#2 + rIL33
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1417 -   Target 'rTSLP' (col 14): rel_exp=0.601520693933457, low=0.0916455635802157, high=0.10811804639795308
+2025-06-12 17:02:07 - DEBUG - debug_print:128 -   ✓ 200uL  Saline NA (D1, 3)_#2 + rTSLP: {'rel_exp': 0.601520693933457, 'low': 0.0916455635802157, 'high': 0.10811804639795308}
+2025-06-12 17:02:07 - DEBUG - _extract_trigger_target_data:1432 -     ✓ Extracted data for 200uL  Saline NA (D1, 3)_#2 + rTSLP
+2025-06-12 17:02:07 - INFO - _extract_trigger_target_data:1435 - Data extraction completed: 6 combinations extracted, 0 skipped
+2025-06-12 17:02:07 - INFO - _extract_trigger_target_data:1436 - Trigger name distribution: {'200uL  Saline NA (D1, 3)': 2}
+2025-06-12 17:02:07 - INFO - extract_relative_expression_data:1298 - Actually extracted 6 trigger-target combinations
+2025-06-12 17:02:07 - INFO - extract_relative_expression_data:1310 - Final 6 combinations after removing empty triggers
+2025-06-12 17:02:07 - DEBUG - safe_workbook_operation:521 - Successfully processed workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm
+2025-06-12 17:02:07 - INFO - process_study_folder:1577 - Using longer trigger list: metadata has 6 vs results 2
+2025-06-12 17:02:07 - DEBUG - safe_workbook_operation:514 - Opening workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm (read_only=True, data_only=True)
+2025-06-12 17:02:07 - INFO - _extract_relative_expression_with_metadata_triggers:2178 - Enhanced trigger matching: using 6 metadata triggers
+2025-06-12 17:02:13 - DEBUG - _extract_relative_expression_with_metadata_triggers:2239 - Found 6 data rows with expression values for trigger matching
+2025-06-12 17:02:13 - DEBUG - _extract_relative_expression_with_metadata_triggers:2267 - Positionally mapped metadata trigger 'Saline' to row 130 (results cell: '200uL  Saline NA (D1, 3)')
+2025-06-12 17:02:13 - DEBUG - _extract_relative_expression_with_metadata_triggers:2267 - Positionally mapped metadata trigger 'Saline_#2' to row 131 (results cell: '200uL  Saline NA (D1, 3)')
+2025-06-12 17:02:13 - DEBUG - _extract_relative_expression_with_metadata_triggers:2267 - Positionally mapped metadata trigger 'AC005120' to row 132 (results cell: '200uL  AC005120 2x5mpk (D1, 3)')
+2025-06-12 17:02:13 - DEBUG - _extract_relative_expression_with_metadata_triggers:2267 - Positionally mapped metadata trigger 'AC005889' to row 133 (results cell: '200uL  AC005889 2x5mpk (D1, 3)')
+2025-06-12 17:02:13 - DEBUG - _extract_relative_expression_with_metadata_triggers:2267 - Positionally mapped metadata trigger 'AC001714' to row 134 (results cell: '200uL  AC001714 2x5mpk (D1, 3)')
+2025-06-12 17:02:13 - DEBUG - _extract_relative_expression_with_metadata_triggers:2267 - Positionally mapped metadata trigger 'AC002666' to row 135 (results cell: '200uL  AC002666 2x5mpk (D1, 3)')
+2025-06-12 17:02:13 - INFO - _extract_relative_expression_with_metadata_triggers:2271 - Positional mapping result: 6/6 triggers mapped
+2025-06-12 17:02:13 - DEBUG - safe_workbook_operation:521 - Successfully processed workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm
+2025-06-12 17:02:13 - INFO - process_study_folder:1594 - Enhanced trigger matching successful: 6 triggers found
+2025-06-12 17:02:13 - INFO - export_to_csv:1679 - Starting CSV export to: test_output\saline_fix_test.csv
+2025-06-12 17:02:13 - INFO - export_to_csv:1680 - Processing 1 studies for CSV export
+2025-06-12 17:02:13 - DEBUG - export_to_csv:1702 - Processing study for CSV: rIL33_8_Alternaria (2024010302)
+2025-06-12 17:02:13 - INFO - _process_study_for_csv:1755 - Processing CSV data for study: rIL33_8_Alternaria (2024010302)
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1760 - Study info for CSV: {'study_name': 'rIL33_8_Alternaria', 'study_code': "'2024010302'", 'screening_model': 'Rat', 'trigger_dose_map': {'Saline': {'dose': None, 'dose_type': None, 'dose_flagged': False, 'original_name': 'Saline'}, 'Saline_#2': {'dose': None, 'dose_type': None, 'dose_flagged': False, 'original_name': 'Saline'}, 'AC005120': {'dose': '2x5mpk', 'dose_type': None, 'dose_flagged': False, 'original_name': 'AC005120'}, 'AC005889': {'dose': '2x5mpk', 'dose_type': None, 'dose_flagged': False, 'original_name': 'AC005889'}, 'AC001714': {'dose': '2x5mpk', 'dose_type': None, 'dose_flagged': False, 'original_name': 'AC001714'}, 'AC002666': {'dose': '2x5mpk', 'dose_type': None, 'dose_flagged': False, 'original_name': 'AC002666'}}, 'timepoint': 'D16', 'tissue': 'BALF'}
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1775 - Found 6 triggers in relative expression data
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1776 - Trigger names in relative expression: ['Saline', 'Saline_#2', 'AC005120', 'AC005889', 'AC001714', 'AC002666']
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1777 - Trigger names in metadata: ['Saline', 'Saline_#2', 'AC005120', 'AC005889', 'AC001714', 'AC002666']
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1828 - Processing trigger key 'Saline' (name: 'Saline') with 3 items, final dose: 'None'
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: Saline (key: Saline) -> rIL13 (gene_target) = {'rel_exp': 1.000000000000002, 'low': 0.6239996050674493, 'high': 1.6595716745972682}, dose = None
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: Saline (key: Saline) -> rIL33 (gene_target) = {'rel_exp': 0.9999999999999999, 'low': 0.1854758233525372, 'high': 0.22771064220088066}, dose = None
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: Saline (key: Saline) -> rTSLP (gene_target) = {'rel_exp': 0.9999999999999989, 'low': 0.3285989059073784, 'high': 0.4894226548014047}, dose = None
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1828 - Processing trigger key 'Saline_#2' (name: 'Saline') with 3 items, final dose: 'None'
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: Saline (key: Saline_#2) -> rIL13 (gene_target) = {'rel_exp': 4.1756749697074955, 'low': 1.7247612304314957, 'high': 2.9385131688731674}, dose = None
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: Saline (key: Saline_#2) -> rIL33 (gene_target) = {'rel_exp': 0.9600949399136235, 'low': 0.17249244926654073, 'high': 0.21026993906285274}, dose = None
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: Saline (key: Saline_#2) -> rTSLP (gene_target) = {'rel_exp': 0.601520693933457, 'low': 0.0916455635802157, 'high': 0.10811804639795308}, dose = None
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1828 - Processing trigger key 'AC005120' (name: 'AC005120') with 3 items, final dose: '2x5mpk'
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: AC005120 (key: AC005120) -> rIL13 (gene_target) = {'rel_exp': 1.9980307683705811, 'low': 0.7086719163802901, 'high': 1.09818014699497}, dose = 2x5mpk
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: AC005120 (key: AC005120) -> rIL33 (gene_target) = {'rel_exp': 0.33752509851074464, 'low': 0.0476676483119608, 'high': 0.055506690206638565}, dose = 2x5mpk
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: AC005120 (key: AC005120) -> rTSLP (gene_target) = {'rel_exp': 0.5274286561384203, 'low': 0.14563153328531414, 'high': 0.20118078239579362}, dose = 2x5mpk
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1828 - Processing trigger key 'AC005889' (name: 'AC005889') with 3 items, final dose: '2x5mpk'
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: AC005889 (key: AC005889) -> rIL13 (gene_target) = {'rel_exp': 3.3347340659721314, 'low': 2.0244720886310787, 'high': 5.1524627565457894}, dose = 2x5mpk
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: AC005889 (key: AC005889) -> rIL33 (gene_target) = {'rel_exp': 0.31365205356441866, 'low': 0.08240863276583107, 'high': 0.11177674508176455}, dose = 2x5mpk
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: AC005889 (key: AC005889) -> rTSLP (gene_target) = {'rel_exp': 0.5541953089574349, 'low': 0.1696806358093464, 'high': 0.24455818972151022}, dose = 2x5mpk
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1828 - Processing trigger key 'AC001714' (name: 'AC001714') with 3 items, final dose: '2x5mpk'
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: AC001714 (key: AC001714) -> rIL13 (gene_target) = {'rel_exp': 4.075532133111316, 'low': 2.9815481225065854, 'high': 11.107470549753522}, dose = 2x5mpk
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: AC001714 (key: AC001714) -> rIL33 (gene_target) = {'rel_exp': 0.7585932182935039, 'low': 0.1509529196963485, 'high': 0.18845336859261097}, dose = 2x5mpk
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: AC001714 (key: AC001714) -> rTSLP (gene_target) = {'rel_exp': 0.25216576319949163, 'low': 0.0900281491572068, 'high': 0.14001696691887977}, dose = 2x5mpk
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1828 - Processing trigger key 'AC002666' (name: 'AC002666') with 3 items, final dose: '2x5mpk'
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: AC002666 (key: AC002666) -> rIL13 (gene_target) = {'rel_exp': 11.036139327352425, 'low': 5.407487891833524, 'high': 10.60250229897994}, dose = 2x5mpk
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: AC002666 (key: AC002666) -> rIL33 (gene_target) = {'rel_exp': 0.995305014092342, 'low': 0.21560624412931584, 'high': 0.2752267723363241}, dose = 2x5mpk
+2025-06-12 17:02:13 - DEBUG - _process_study_for_csv:1852 - Added CSV row: AC002666 (key: AC002666) -> rTSLP (gene_target) = {'rel_exp': 0.47912721818009263, 'low': 0.1652983388231124, 'high': 0.2523634326209332}, dose = 2x5mpk
+2025-06-12 17:02:13 - INFO - _process_study_for_csv:1874 - INCLUDED IN CSV: rIL33_8_Alternaria (2024010302) - Added 18 rows
+2025-06-12 17:02:13 - INFO - export_to_csv:1721 - CSV file written successfully: test_output\saline_fix_test.csv
+2025-06-12 17:02:13 - INFO - export_to_csv:1722 - ============================================================
+2025-06-12 17:02:13 - INFO - export_to_csv:1723 - CSV EXPORT SUMMARY
+2025-06-12 17:02:13 - INFO - export_to_csv:1724 - ============================================================
+2025-06-12 17:02:13 - INFO - export_to_csv:1725 - Studies processed for CSV: 1
+2025-06-12 17:02:13 - INFO - export_to_csv:1726 - Studies included in CSV: 1
+2025-06-12 17:02:13 - INFO - export_to_csv:1727 - Studies excluded from CSV: 0
+2025-06-12 17:02:13 - INFO - export_to_csv:1728 - Total data rows in CSV: 18

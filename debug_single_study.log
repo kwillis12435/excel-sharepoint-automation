@@ -1,0 +1,114 @@
+2025-06-12 16:58:47 - INFO - load_known_targets:177 - Loaded 0 target names and aliases from alltargets.csv
+2025-06-12 16:58:47 - DEBUG - safe_workbook_operation:514 - Opening workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm (read_only=True, data_only=True)
+2025-06-12 16:58:57 - DEBUG - extract_targets_from_row:678 - Target row cell 'rIL13': classified as target
+2025-06-12 16:58:57 - DEBUG - extract_targets_from_row:691 -   Added to targets: 'rIL13'
+2025-06-12 16:58:57 - DEBUG - extract_targets_from_row:678 - Target row cell 'rIL33': classified as target
+2025-06-12 16:58:57 - DEBUG - extract_targets_from_row:691 -   Added to targets: 'rIL33'
+2025-06-12 16:58:57 - DEBUG - extract_targets_from_row:678 - Target row cell 'rTSLP': classified as target
+2025-06-12 16:58:57 - DEBUG - extract_targets_from_row:691 -   Added to targets: 'rTSLP'
+2025-06-12 16:58:57 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 16:58:57 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 16:58:57 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 16:58:57 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 16:58:58 - DEBUG - safe_workbook_operation:521 - Successfully processed workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm
+2025-06-12 16:58:58 - DEBUG - safe_workbook_operation:514 - Opening workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm (read_only=True, data_only=True)
+2025-06-12 16:59:01 - DEBUG - safe_workbook_operation:521 - Successfully processed workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm
+2025-06-12 16:59:01 - INFO - process_study_folder:1489 - Starting processing of study: 2024010302 (rIL33_8_Alternaria)
+2025-06-12 16:59:01 - DEBUG - process_study_folder:1490 - Study folder path: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)
+2025-06-12 16:59:01 - DEBUG - process_study_folder:1491 - Expected info file: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\2024010302 (rIL33_8_Alternaria).xlsm
+2025-06-12 16:59:01 - DEBUG - process_study_folder:1492 - Expected results folder: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results
+2025-06-12 16:59:01 - DEBUG - process_study_folder:1499 - Found info file: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\2024010302 (rIL33_8_Alternaria).xlsm
+2025-06-12 16:59:01 - DEBUG - safe_workbook_operation:514 - Opening workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\2024010302 (rIL33_8_Alternaria).xlsm (read_only=True, data_only=True)
+2025-06-12 16:59:01 - INFO - extract_study_metadata:711 - Extracting metadata for study: 2024010302 (rIL33_8_Alternaria)
+2025-06-12 16:59:01 - DEBUG - extract_study_metadata:712 - Available sheets: ['Procedure Request Form', 'Dose Calculations', 'Animal Receipt', 'Dose Admin - CNS', 'Tissue Weights', 'Dose Admin - IT', 'Dose Admin - Inhalation', 'Body Weights', 'Blood', 'Inj Record - Trigger', 'Inj Record - Other', 'Harvest', 'Treatment', 'Unscheduled', 'Inj Record - Trigger - SD', 'Inj Record - Other - SD', 'BW and Grouping', 'Study Deviations', 'Medical Records', 'Drawing', 'TW-1.5mLEPAliquot tubes-Top', 'TW-15mL Conical Tube', 'TW-7mL Precellys Tube', 'TW-15mL Precellys Tube', 'TW Formulas', 'FOB Tabulation', 'Plasmid Dosing Prep', 'AAV8 Dosing Prep', 'Dropdown', 'Plate Map', 'Dosing-Virology', 'Dose Administration - ADME PK', 'Urine Collection - ADME PK', 'Blood Collection - ADME PK', 'CSF Collection', 'IOPs -Ocular', 'Dose Administration - Ocular', 'Mouse Anesthesia - Ocular', 'Euthanasia (Rabbits) - Ocular', 'Imaging Obs - Ocular', 'Rat Anesthesia - Ocular', 'BW-Obs Ocular', 'Group Description', 'TW-1.5mL EP AliqTubes-SidePort', 'TW-1.5mL EP AliqTubes-SideP 2']
+2025-06-12 16:59:01 - INFO - extract_study_metadata:761 - Extracted 6 valid triggers from metadata for 2024010302 (rIL33_8_Alternaria) (filtered 0 invalid)
+2025-06-12 16:59:01 - DEBUG - extract_study_metadata:766 -   Trigger 1: 'Saline' -> dose: NA
+2025-06-12 16:59:01 - DEBUG - extract_study_metadata:766 -   Trigger 2: 'Saline' -> dose: NA
+2025-06-12 16:59:01 - DEBUG - extract_study_metadata:766 -   Trigger 3: 'AC005120' -> dose: 2x5mpk
+2025-06-12 16:59:01 - DEBUG - extract_study_metadata:766 -   Trigger 4: 'AC005889' -> dose: 2x5mpk
+2025-06-12 16:59:01 - DEBUG - extract_study_metadata:766 -   Trigger 5: 'AC001714' -> dose: 2x5mpk
+2025-06-12 16:59:01 - DEBUG - extract_study_metadata:766 -   Trigger 6: 'AC002666' -> dose: 2x5mpk
+2025-06-12 16:59:01 - DEBUG - _create_trigger_dose_map:877 - Trigger dose mapping: 'Saline' -> dose: 'None', type: 'None', flagged: False
+2025-06-12 16:59:01 - DEBUG - _create_trigger_dose_map:877 - Trigger dose mapping: 'Saline' -> dose: 'None', type: 'None', flagged: False
+2025-06-12 16:59:01 - DEBUG - _create_trigger_dose_map:877 - Trigger dose mapping: 'AC005120' -> dose: '2x5mpk', type: 'None', flagged: False
+2025-06-12 16:59:01 - DEBUG - _create_trigger_dose_map:877 - Trigger dose mapping: 'AC005889' -> dose: '2x5mpk', type: 'None', flagged: False
+2025-06-12 16:59:01 - DEBUG - _create_trigger_dose_map:877 - Trigger dose mapping: 'AC001714' -> dose: '2x5mpk', type: 'None', flagged: False
+2025-06-12 16:59:01 - DEBUG - _create_trigger_dose_map:877 - Trigger dose mapping: 'AC002666' -> dose: '2x5mpk', type: 'None', flagged: False
+2025-06-12 16:59:02 - DEBUG - safe_workbook_operation:521 - Successfully processed workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\2024010302 (rIL33_8_Alternaria).xlsm
+2025-06-12 16:59:02 - INFO - process_study_folder:1505 - Successfully extracted metadata for 2024010302 (rIL33_8_Alternaria)
+2025-06-12 16:59:02 - DEBUG - process_study_folder:1509 -   Metadata study_name: rIL33_8_Alternaria
+2025-06-12 16:59:02 - DEBUG - process_study_folder:1509 -   Metadata study_code: 2024010302
+2025-06-12 16:59:02 - DEBUG - process_study_folder:1509 -   Metadata screening_model: Rat
+2025-06-12 16:59:02 - DEBUG - process_study_folder:1509 -   Metadata tissues: ['BALF', 'Accessory lobe', 'Lung - Remaining Right Lobes', 'Lung - Left Lobe']
+2025-06-12 16:59:02 - DEBUG - process_study_folder:1509 -   Metadata trigger_dose_map: {'Saline': {'dose': None, 'dose_type': None, 'dose_flagged': False}, 'AC005120': {'dose': '2x5mpk', 'dose_type': None, 'dose_flagged': False}, 'AC005889': {'dose': '2x5mpk', 'dose_type': None, 'dose_flagged': False}, 'AC001714': {'dose': '2x5mpk', 'dose_type': None, 'dose_flagged': False}, 'AC002666': {'dose': '2x5mpk', 'dose_type': None, 'dose_flagged': False}}
+2025-06-12 16:59:02 - DEBUG - process_study_folder:1509 -   Metadata timepoint: D16
+2025-06-12 16:59:02 - DEBUG - process_study_folder:1522 - Found results file: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm
+2025-06-12 16:59:02 - DEBUG - safe_workbook_operation:514 - Opening workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm (read_only=True, data_only=True)
+2025-06-12 16:59:02 - INFO - extract_relative_expression_data:1052 - Extracting relative expression data
+2025-06-12 16:59:02 - DEBUG - extract_relative_expression_data:1053 - Available sheets: ['LAR Sheet(s)', 'Isolation Protocol', 'RNA Quant-It Data', 'BioMek CSV', 'MultiFlo CSV', 'Span8 CSV', 'cDNA and qPCR Setup (A)', 'cDNA & qPCR Setup (M)', 'Plate Setup', 'AmpPlots', 'RawData plate1', 'RawData plate2', 'Rel Exp-Target1', 'Rel Exp-Target2', 'Rel Exp-Target3', 'Rel Exp-Target4', 'Rel Exp-Target5', 'Rel Exp-Target6', 'Rel Exp-Target7', 'Rel Exp-Target8', 'Rel Exp-Target9', 'Rel Exp-Target10', 'Rel Exp-Target11', 'Rel Exp-Target12', 'Rel Exp-Target13', 'Rel Exp-Target14', 'Rel Exp-Target15', 'Rel Exp-Target16', 'Rel Exp-Target17', 'Rel Exp-Target18', 'Compiled Indiv. & Grp.', 'Graphs', 'Trigger Diagrams', 'Input']
+2025-06-12 16:59:02 - INFO - extract_relative_expression_data:1064 - Using sheet: 'Compiled Indiv. & Grp.' for relative expression data
+2025-06-12 16:59:12 - DEBUG - extract_targets_from_row:678 - Target row cell 'rIL13': classified as target
+2025-06-12 16:59:12 - DEBUG - extract_targets_from_row:691 -   Added to targets: 'rIL13'
+2025-06-12 16:59:12 - DEBUG - extract_targets_from_row:678 - Target row cell 'rIL33': classified as target
+2025-06-12 16:59:12 - DEBUG - extract_targets_from_row:691 -   Added to targets: 'rIL33'
+2025-06-12 16:59:12 - DEBUG - extract_targets_from_row:678 - Target row cell 'rTSLP': classified as target
+2025-06-12 16:59:12 - DEBUG - extract_targets_from_row:691 -   Added to targets: 'rTSLP'
+2025-06-12 16:59:12 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 16:59:12 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 16:59:12 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 16:59:13 - DEBUG - extract_targets_from_row:670 - Skipped invalid target name: '0'
+2025-06-12 16:59:13 - INFO - extract_relative_expression_data:1137 - Data extraction plan: 3 gene targets, 0 tissue targets, 3 total items
+2025-06-12 16:59:15 - WARNING - extract_relative_expression_data:1182 - Found dose-like values in trigger column: ['200uL  Saline NA (D1, 3)', '200uL  Saline NA (D1, 3)', '200uL  AC005120 2x5mpk (D1, 3)'] - possible wrong location
+2025-06-12 16:59:15 - DEBUG - extract_relative_expression_data:1223 - Filtered out dose-like trigger: '200uL  AC005120 2x5mpk (D1, 3)'
+2025-06-12 16:59:15 - DEBUG - extract_relative_expression_data:1223 - Filtered out dose-like trigger: '200uL  AC005889 2x5mpk (D1, 3)'
+2025-06-12 16:59:15 - DEBUG - extract_relative_expression_data:1223 - Filtered out dose-like trigger: '200uL  AC001714 2x5mpk (D1, 3)'
+2025-06-12 16:59:15 - DEBUG - extract_relative_expression_data:1223 - Filtered out dose-like trigger: '200uL  AC002666 2x5mpk (D1, 3)'
+2025-06-12 16:59:15 - DEBUG - extract_relative_expression_data:1201 - Filtered out invalid trigger: 'x'
+2025-06-12 16:59:15 - INFO - extract_relative_expression_data:1232 - Filtered 5 invalid/dose-like triggers from 7 raw triggers, kept 2 triggers
+2025-06-12 16:59:15 - WARNING - extract_relative_expression_data:1238 - Only found 2 triggers in results sheet, attempting metadata matching
+2025-06-12 16:59:15 - INFO - extract_relative_expression_data:1247 - Found 3 gene targets, 0 tissue targets, and 2 triggers in relative expression data
+2025-06-12 16:59:15 - DEBUG - extract_relative_expression_data:1248 - Gene targets: ['rIL13', 'rIL33', 'rTSLP']
+2025-06-12 16:59:15 - DEBUG - extract_relative_expression_data:1249 - Tissue targets: []
+2025-06-12 16:59:15 - DEBUG - extract_relative_expression_data:1253 -   Trigger 1: '200uL  Saline NA (D1, 3)'
+2025-06-12 16:59:15 - DEBUG - extract_relative_expression_data:1253 -   Trigger 2: '200uL  Saline NA (D1, 3)'
+2025-06-12 16:59:15 - INFO - extract_relative_expression_data:1266 - Data extraction: 2 triggers × 3 items = 6 expected combinations
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1349 - Starting data extraction from row 130 for 2 triggers and 3 targets
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1350 - Target columns: [6, 10, 14]
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1382 - Processing trigger '200uL  Saline NA (D1, 3)' (original: '200uL  Saline NA (D1, 3)', row 130)
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1396 -   Target 'rIL13' (col 6): rel_exp=1.000000000000002, low=0.6239996050674493, high=1.6595716745972682
+2025-06-12 16:59:15 - DEBUG - debug_print:128 -   ✓ 200uL  Saline NA (D1, 3) + rIL13: {'rel_exp': 1.000000000000002, 'low': 0.6239996050674493, 'high': 1.6595716745972682}
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1411 -     ✓ Extracted data for 200uL  Saline NA (D1, 3) + rIL13
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1396 -   Target 'rIL33' (col 10): rel_exp=0.9999999999999999, low=0.1854758233525372, high=0.22771064220088066
+2025-06-12 16:59:15 - DEBUG - debug_print:128 -   ✓ 200uL  Saline NA (D1, 3) + rIL33: {'rel_exp': 0.9999999999999999, 'low': 0.1854758233525372, 'high': 0.22771064220088066}
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1411 -     ✓ Extracted data for 200uL  Saline NA (D1, 3) + rIL33
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1396 -   Target 'rTSLP' (col 14): rel_exp=0.9999999999999989, low=0.3285989059073784, high=0.4894226548014047
+2025-06-12 16:59:15 - DEBUG - debug_print:128 -   ✓ 200uL  Saline NA (D1, 3) + rTSLP: {'rel_exp': 0.9999999999999989, 'low': 0.3285989059073784, 'high': 0.4894226548014047}
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1411 -     ✓ Extracted data for 200uL  Saline NA (D1, 3) + rTSLP
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1373 - Duplicate trigger detected: '200uL  Saline NA (D1, 3)' -> using key '200uL  Saline NA (D1, 3)_#2'
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1382 - Processing trigger '200uL  Saline NA (D1, 3)_#2' (original: '200uL  Saline NA (D1, 3)', row 131)
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1396 -   Target 'rIL13' (col 6): rel_exp=4.1756749697074955, low=1.7247612304314957, high=2.9385131688731674
+2025-06-12 16:59:15 - DEBUG - debug_print:128 -   ✓ 200uL  Saline NA (D1, 3)_#2 + rIL13: {'rel_exp': 4.1756749697074955, 'low': 1.7247612304314957, 'high': 2.9385131688731674}
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1411 -     ✓ Extracted data for 200uL  Saline NA (D1, 3)_#2 + rIL13
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1396 -   Target 'rIL33' (col 10): rel_exp=0.9600949399136235, low=0.17249244926654073, high=0.21026993906285274
+2025-06-12 16:59:15 - DEBUG - debug_print:128 -   ✓ 200uL  Saline NA (D1, 3)_#2 + rIL33: {'rel_exp': 0.9600949399136235, 'low': 0.17249244926654073, 'high': 0.21026993906285274}
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1411 -     ✓ Extracted data for 200uL  Saline NA (D1, 3)_#2 + rIL33
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1396 -   Target 'rTSLP' (col 14): rel_exp=0.601520693933457, low=0.0916455635802157, high=0.10811804639795308
+2025-06-12 16:59:15 - DEBUG - debug_print:128 -   ✓ 200uL  Saline NA (D1, 3)_#2 + rTSLP: {'rel_exp': 0.601520693933457, 'low': 0.0916455635802157, 'high': 0.10811804639795308}
+2025-06-12 16:59:15 - DEBUG - _extract_trigger_target_data:1411 -     ✓ Extracted data for 200uL  Saline NA (D1, 3)_#2 + rTSLP
+2025-06-12 16:59:15 - INFO - _extract_trigger_target_data:1414 - Data extraction completed: 6 combinations extracted, 0 skipped
+2025-06-12 16:59:15 - INFO - _extract_trigger_target_data:1415 - Trigger name distribution: {'200uL  Saline NA (D1, 3)': 2}
+2025-06-12 16:59:15 - INFO - extract_relative_expression_data:1277 - Actually extracted 6 trigger-target combinations
+2025-06-12 16:59:15 - INFO - extract_relative_expression_data:1289 - Final 6 combinations after removing empty triggers
+2025-06-12 16:59:15 - DEBUG - safe_workbook_operation:521 - Successfully processed workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm
+2025-06-12 16:59:15 - INFO - process_study_folder:1556 - Using longer trigger list: metadata has 5 vs results 2
+2025-06-12 16:59:15 - DEBUG - safe_workbook_operation:514 - Opening workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm (read_only=True, data_only=True)
+2025-06-12 16:59:15 - INFO - _extract_relative_expression_with_metadata_triggers:2143 - Enhanced trigger matching: using 5 metadata triggers
+2025-06-12 16:59:21 - DEBUG - _extract_relative_expression_with_metadata_triggers:2204 - Found 6 data rows with expression values for trigger matching
+2025-06-12 16:59:21 - DEBUG - _extract_relative_expression_with_metadata_triggers:2232 - Positionally mapped metadata trigger 'Saline' to row 130 (results cell: '200uL  Saline NA (D1, 3)')
+2025-06-12 16:59:21 - DEBUG - _extract_relative_expression_with_metadata_triggers:2232 - Positionally mapped metadata trigger 'AC005120' to row 131 (results cell: '200uL  Saline NA (D1, 3)')
+2025-06-12 16:59:21 - DEBUG - _extract_relative_expression_with_metadata_triggers:2232 - Positionally mapped metadata trigger 'AC005889' to row 132 (results cell: '200uL  AC005120 2x5mpk (D1, 3)')
+2025-06-12 16:59:21 - DEBUG - _extract_relative_expression_with_metadata_triggers:2232 - Positionally mapped metadata trigger 'AC001714' to row 133 (results cell: '200uL  AC005889 2x5mpk (D1, 3)')
+2025-06-12 16:59:21 - DEBUG - _extract_relative_expression_with_metadata_triggers:2232 - Positionally mapped metadata trigger 'AC002666' to row 134 (results cell: '200uL  AC001714 2x5mpk (D1, 3)')
+2025-06-12 16:59:21 - INFO - _extract_relative_expression_with_metadata_triggers:2236 - Positional mapping result: 5/5 triggers mapped
+2025-06-12 16:59:21 - DEBUG - safe_workbook_operation:521 - Successfully processed workbook: C:\Users\kwillis\OneDrive - Arrowhead Pharmaceuticals Inc\Discovery Biology - 2024\01 - 2024\2024010302 (rIL33_8_Alternaria)\Results\2024JAN18 END 2024010302_rIL33_8_Alternaria DDCt Excel macro_BioMek_v45_Test.xlsm
+2025-06-12 16:59:21 - INFO - process_study_folder:1573 - Enhanced trigger matching successful: 5 triggers found
